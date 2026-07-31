@@ -5,10 +5,12 @@
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange?logo=jupyter)](https://jupyter.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Dataset](https://img.shields.io/badge/Dataset-NASA%20CMAPSS-red)](https://www.nasa.gov/intelligent-systems-division/)
+[![Medium](https://img.shields.io/badge/Medium-Published-black?logo=medium)](https://medium.com/@purupandey2001/what-60mb-of-factory-sensor-data-taught-me-about-research-methodology-4f322c4fd6e6)
 
 > **Research Domain:** Industrial IoT Reliability · Predictive Maintenance · Forensic Data Analytics  
 > **Author:** Puru Pandey — B.Tech AI/ML, Galgotias University  
-> **Inspired by:** Applied forensic analytics work at Deloitte Australia (Technology Analyst Simulation, Jul 2024)
+> **Inspired by:** Applied forensic analytics work at Deloitte Australia (Technology Analyst Simulation, Jul 2024)  
+> **Published Write-up:** [What 60MB of Factory Sensor Data Taught Me About Research Methodology](https://medium.com/@purupandey2001/what-60mb-of-factory-sensor-data-taught-me-about-research-methodology-4f322c4fd6e6) — Medium
 
 ---
 
