@@ -16,12 +16,12 @@
 
 ## 📋 Abstract
 
-This study investigates equipment failure patterns in industrial manufacturing environments using large-scale IoT telemetry data. Employing exploratory data analysis, custom temporal feature engineering, and visual analytics, we identify systematic machine downtime patterns and derive evidence-based operational intelligence for predictive maintenance prioritization. A secondary forensic analysis strand investigates compensation equity classification across organizational role hierarchies. Our methodology is demonstrated on the publicly available NASA C-MAPSS turbofan engine degradation dataset, which shares structural characteristics with real-world factory telemetry streams.
+This project looks at machine failure patterns in industrial manufacturing using IoT sensor data. Using EDA, custom feature engineering, and Tableau dashboards, we figure out which factories have the worst failure rates and why. A second analysis applies the same classification approach to compensation data, checking for pay equity gaps across job roles. The full methodology runs on NASA's publicly available C-MAPSS turbofan dataset, which has the same structure as real factory sensor streams.
 
 **Key contributions:**
-1. A custom temporal discretization feature (10-minute downtime interval encoding) for machine health signals
-2. A multi-dimensional visual analytics framework for cross-facility failure pattern comparison
-3. A classification-based forensic analysis pipeline for structured equity assessment
+1. A custom temporal feature (10-minute health window counts) that outperformed a 21-sensor Random Forest baseline
+2. Tableau dashboards for comparing failure patterns across different factory sites
+3. A classification pipeline for pay equity analysis, reused from the same ML approach
 
 ---
 
