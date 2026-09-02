@@ -86,24 +86,24 @@ But the *why* was more interesting than the *which*. Digging into sensor correla
 
 ## ⚙️ Step 3: The Key Innovation — Custom Downtime Interval Encoding
 
-The most impactful piece of this analysis was a custom feature I engineered: **discretized 10-minute downtime intervals**.
+The most impactful piece of this analysis was a custom feature I engineered: **rolling 10-cycle degraded-state counter**.
 
 Here's the problem it solves: raw sensor readings are continuous and noisy. You can't look at a sensor value and immediately know "this machine is about to fail." But if you classify each reading into a health state (HEALTHY → DEGRADED → CRITICAL) and then count how many *10-minute intervals* a machine spent in a degraded state, you get a clean, interpretable signal.
 
 ```python
 def engineer_downtime_intervals(df, health_col='health_index',
                                  unhealthy_threshold=0.35,
-                                 interval_minutes=10):
+                                 window_size_cycles=10):
     df = df.copy()
     # Step 1: Flag unhealthy cycles
     df['is_unhealthy'] = (df[health_col] < unhealthy_threshold).astype(int)
-    # Step 2: Discretize into 10-minute buckets
-    df['downtime_interval'] = (df['cycle'] // interval_minutes).astype(int)
+    # Step 2: Discretize into 10-cycle windows
+    df['health_window_id'] = (df['cycle'] // window_size_cycles).astype(int)
     # Step 3: Cumulative downtime per machine
     df['cumulative_downtime'] = (
         df.groupby('machine_id')['is_unhealthy']
           .cumsum()
-          .divide(interval_minutes)
+          .divide(window_size_cycles)
           .apply(np.floor)
     )
     return df
