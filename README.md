@@ -1,4 +1,4 @@
-﻿# Industrial Telemetry Analytics: Recall-Optimised Failure Detection on NASA C-MAPSS FD001
+# Industrial Telemetry Analytics: Recall-Optimised Failure Detection on NASA C-MAPSS FD001
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://python.org)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange?logo=jupyter)](https://jupyter.org)
@@ -138,9 +138,9 @@ Confusion matrices (20 held-out engines, 4,291 test cycles):
 
 | | Predicted Healthy | Predicted At-Risk |
 |---|---|---|
-| **LR — Actual Healthy** | 3,329 | 342 |
-| **LR — Actual At-Risk** | **12** | 608 |
-| **RF — Actual Healthy** | 3,559 | 112 |
+| **LR — Actual Healthy** | 3,335 | 336 |
+| **LR — Actual At-Risk** | **15** | 605 |
+| **RF — Actual Healthy** | 3,561 | 110 |
 | **RF — Actual At-Risk** | **74** | 546 |
 
 ---
