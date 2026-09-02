@@ -1,10 +1,11 @@
 # From Raw Telemetry to Operational Intelligence
 ## A Data Analytics Study on Industrial Machine Failure Patterns
-**By Puru Pandey** | Data Analyst & AI/ML Researcher | [GitHub](https://github.com/Puru2001pandey) | [LinkedIn](https://linkedin.com/in/puru-pandey-851271229)
+**By Puru Pandey** | Data Analyst & AI/ML Researcher | [Zenodo Preprint (DOI: 10.5281/zenodo.22259839)](https://doi.org/10.5281/zenodo.22259839) | [GitHub](https://github.com/Puru2001pandey/industrial-telemetry-analytics-research) | [LinkedIn](https://linkedin.com/in/puru-pandey-851271229)
 
 ---
 
-*Reading time: ~8 minutes*
+*Reading time: ~8 minutes*  
+*Preprint published on Zenodo: [doi.org/10.5281/zenodo.22259839](https://doi.org/10.5281/zenodo.22259839)*
 
 ---
 
@@ -181,16 +182,16 @@ The classification achieved an F1 score of 0.873, reliably identifying employees
 
 ## 📁 Reproduce This Analysis
 
-The full Jupyter Notebook for this study — using the publicly available NASA C-MAPSS turbofan engine dataset as a structural analogue — is available on GitHub:
+The full reproduction pipeline and dataset are available on GitHub and archived on Zenodo:
 
-🔗 **[github.com/Puru2001pandey/industrial-telemetry-analytics-research](https://github.com/Puru2001pandey/industrial-telemetry-analytics-research)**
+🔗 **Preprint:** [https://doi.org/10.5281/zenodo.22259839](https://doi.org/10.5281/zenodo.22259839)  
+🔗 **Repository:** [github.com/Puru2001pandey/industrial-telemetry-analytics-research](https://github.com/Puru2001pandey/industrial-telemetry-analytics-research)
 
-The notebook covers all phases:
-- Schema normalization & preprocessing
-- EDA & failure rate comparison
-- Custom downtime interval feature engineering
-- **Phase 3B: Verified LR vs RF comparison** (reproducible — run cells, see the same 0.98 / 0.88 recall numbers)
-- Forensic classification analysis (pay equity)
+You can run `run_reproduction.ipynb` directly to reproduce:
+- Per-unit min-max scaling & health-window feature generation
+- Single 80/20 train/test evaluation (LR 0.98 recall vs RF 0.88 recall)
+- 30-seed stability analysis ($p < 0.0001$)
+- Confusion matrices and parameter sensitivity tables
 
 ---
 
