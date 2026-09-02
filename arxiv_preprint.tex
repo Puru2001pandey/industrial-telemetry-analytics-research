@@ -1,0 +1,374 @@
+﻿\documentclass[10pt,twocolumn]{article}
+
+%% Packages
+\usepackage[margin=0.75in,top=0.9in,bottom=0.9in]{geometry}
+\usepackage{times}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage[numbers,sort&compress]{natbib}
+
+%% Header / footer
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[C]{\small\textit{Preprint -- submitted to arXiv, September 2026}}
+\fancyfoot[C]{\thepage}
+
+%% Title
+\title{\textbf{Recall-Optimised Failure Detection in Industrial Telemetry:}\\
+\textbf{A Rolling Degraded-State Counter Versus a 21-Sensor Random Forest}\\
+\textbf{on NASA C-MAPSS FD001}}
+
+\author{Puru Pandey\\
+\small Department of Artificial Intelligence \& Machine Learning\\
+\small Galgotias University, Greater Noida, UP 201310, India\\
+\small \href{mailto:purupandey2001@gmail.com}{purupandey2001@gmail.com}\\
+\small \href{https://github.com/Puru2001pandey/industrial-telemetry-analytics-research}{github.com/Puru2001pandey/industrial-telemetry-analytics-research}}
+
+\date{September 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+%% Abstract
+\begin{abstract}
+We evaluate whether a single domain-informed temporal feature can match or exceed a
+21-channel sensor ensemble on the operationally critical metric for industrial
+predictive maintenance: recall on the at-risk class.
+Using the NASA C-MAPSS FD001 benchmark (20,631 cycles, 100 engine units, 21 sensor
+channels), we design a rolling 10-cycle degraded-state counter derived from
+per-unit-normalised sensor composites and train a logistic regression model on this
+one feature. We compare it against a Random Forest trained on all 21 raw sensor
+channels, evaluated on a unit-level 80/20 split that eliminates temporal leakage.
+The logistic regression achieves \textbf{0.98 recall} on at-risk engine cycles versus
+\textbf{0.88} for the Random Forest, despite the Random Forest achieving higher weighted
+F1 (0.9576 vs.\ 0.9247).
+In predictive maintenance, a missed failure incurs unplanned downtime and safety risk
+whereas a false alarm incurs only an unnecessary inspection.
+This cost asymmetry makes recall on the minority at-risk class the correct primary
+metric rather than overall weighted F1.
+Our results demonstrate that a computationally lightweight, interpretable feature
+engineered from domain knowledge of degradation dynamics outperforms a high-dimensional
+sensor ensemble on the metric that operationally matters.
+Full code and data pipeline are publicly available on GitHub under the MIT licence.
+\end{abstract}
+
+\noindent\textbf{Keywords:} predictive maintenance, feature engineering, C-MAPSS,
+logistic regression, random forest, at-risk recall, class imbalance, industrial IoT.
+
+%%===========================================================================
+\section{Introduction}
+\label{sec:intro}
+
+Industrial equipment generates continuous multi-channel telemetry streams whose
+primary purpose is to enable predictive maintenance (PdM)---the pre-emptive detection
+of impending failures before they cause unplanned downtime or safety incidents
+\cite{jardine2006review}.
+The core PdM task is binary: given a time-indexed window of sensor readings from a
+single machine, classify whether the machine is in a \emph{healthy} operating state
+or \emph{at risk} of failure within a short horizon.
+
+Two broad modelling strategies dominate the literature.
+The first feeds raw multi-sensor readings directly into an ensemble classifier (e.g.\
+Random Forest, XGBoost) and relies on the model to discover discriminative patterns
+across channels \cite{saxena2008damage,ramasso2014application}.
+The second engineers domain-informed features that compress expert knowledge of failure
+dynamics into compact representations, then applies simple linear models
+\cite{heimes2008recurrent,khelif2017direct}.
+
+These strategies differ not only in complexity but in what they optimise implicitly.
+Raw-sensor ensembles maximise overall classification accuracy, which on class-imbalanced
+PdM datasets is dominated by the majority \emph{healthy} class.
+Domain-feature approaches concentrate signal on the degradation trajectory---the dynamics
+that precede failure.
+
+This paper asks a direct empirical question: on a standard PdM benchmark, does a single
+rolling degradation-state counter outperform a 21-sensor Random Forest on the metric
+that \emph{operationally matters}?
+We argue that metric is not weighted F1 or accuracy, but recall on the at-risk class,
+and we demonstrate that the answer is yes: 0.98 versus 0.88 recall, a 10-point gap
+that translates directly to fewer missed failures in deployment.
+
+%%===========================================================================
+\section{Related Work}
+\label{sec:related}
+
+The NASA C-MAPSS dataset \cite{saxena2008damage} is the most widely used benchmark for
+Remaining Useful Life (RUL) regression and binary failure classification.
+Deep sequence models---LSTMs, temporal CNNs, and Transformers---currently achieve
+state-of-the-art RUL RMSE on FD001 \cite{li2018remaining,wu2021temporal}.
+However, RUL regression and binary at-risk classification are distinct tasks: the former
+predicts a continuous survival estimate; the latter classifies whether imminent failure
+is probable within a fixed horizon.
+
+For binary classification, \citet{khelif2017direct} show that feature engineering over
+a hand-crafted health indicator can match deep models when the evaluation horizon is
+fixed. \citet{ramasso2014application} demonstrate that operating-condition normalisation
+is critical before any model is applied to FD001, as raw sensor magnitudes are
+confounded by engine-specific initial conditions.
+
+Our contribution is methodological: we isolate a single rolling temporal feature,
+construct a fair unit-level evaluation split, and foreground recall on the at-risk class
+as the evaluation criterion appropriate to the deployment cost structure.
+
+%%===========================================================================
+\section{Dataset}
+\label{sec:data}
+
+\paragraph{NASA C-MAPSS FD001.}
+The Commercial Modular Aero-Propulsion System Simulation (C-MAPSS)
+dataset~\cite{saxena2008damage} provides run-to-failure telemetry for turbofan engines
+simulated under a single operating condition (FD001 subset).
+Each row records one operational cycle for one engine unit: three operating-setting
+columns and 21 sensor readings.
+The training file contains 20,631 rows across 100 engine units, with per-unit cycle
+counts ranging from 128 to 362 (mean 206).
+No holdout test file is used; evaluation is performed on a held-out partition of
+training engines.
+
+\paragraph{Binary label definition.}
+For engine $u$, let $C_u^{\max}$ denote its maximum recorded cycle (the failure point).
+The Remaining Useful Life at cycle $c$ is $\mathrm{RUL}(u,c)=C_u^{\max}-c$.
+We define:
+\begin{equation}
+  y_{u,c}=
+  \begin{cases}
+    1 & \text{if }\mathrm{RUL}(u,c)\leq 30 \quad\text{(at risk)}\\
+    0 & \text{otherwise}\quad\text{(healthy)}
+  \end{cases}
+\end{equation}
+This yields 17,531 healthy and 3,100 at-risk observations (14.4\% minority class).
+
+%%===========================================================================
+\section{Methodology}
+\label{sec:method}
+
+\subsection{Sensor Preprocessing}
+
+Several C-MAPSS sensors are constant or near-constant across FD001 and provide no
+discriminative signal \cite{ramasso2014application}.
+We retain 14 sensors with meaningful variance:
+$\{s_{02},s_{03},s_{04},s_{07},s_{08},s_{09},s_{11},s_{12},s_{13},s_{14},s_{15},s_{17},s_{20},s_{21}\}$,
+categorised by degradation direction:
+rising sensors $\mathcal{R}=\{s_{02},\ldots,s_{15}\}$ (values increase with degradation)
+and falling sensors $\mathcal{F}=\{s_{17},s_{20},s_{21}\}$ (values decrease).
+
+Per-unit min-max normalisation removes engine-specific baseline offsets:
+\begin{equation}
+  \tilde{x}_{u,c,s}=
+  \frac{x_{u,c,s}-\min_c x_{u,c,s}}
+       {\max_c x_{u,c,s}-\min_c x_{u,c,s}+\varepsilon}
+\end{equation}
+where $\varepsilon=10^{-9}$ prevents division by zero.
+
+\subsection{Degradation Score and Health-Window Feature}
+
+We define a composite degradation score for each cycle:
+\begin{equation}
+  d_{u,c}=
+  \frac{
+    \tfrac{1}{|\mathcal{R}|}\!\sum_{s\in\mathcal{R}}\tilde{x}_{u,c,s}
+    +\!\left(1-\tfrac{1}{|\mathcal{F}|}\!\sum_{s\in\mathcal{F}}\tilde{x}_{u,c,s}\right)
+  }{2}
+\end{equation}
+
+A cycle is labelled \emph{degraded} if its score exceeds the 70th percentile of that
+engine's score distribution:
+\begin{equation}
+  g_{u,c}=\mathbf{1}\!\left[d_{u,c}\geq Q_{0.70}(\{d_{u,c'}\}_{c'})\right]
+\end{equation}
+
+The \textbf{health-window feature} is the count of degraded cycles in the 10-cycle
+rolling window ending at cycle $c$:
+\begin{equation}
+  h_{u,c}=\sum_{k=\max(1,\,c-9)}^{c}g_{u,k}
+\end{equation}
+This scalar encodes the recent degradation trajectory as a single interpretable value.
+
+\subsection{Model A: Logistic Regression}
+
+We train $\ell_2$-regularised logistic regression on the scalar $h_{u,c}$ with
+class weights inversely proportional to class frequency (\texttt{balanced}).
+This 1-feature model has a trivially interpretable decision rule.
+
+\subsection{Model B: Random Forest Baseline}
+
+A 100-tree Random Forest is trained on all 21 standardised raw sensor columns
+(\texttt{class\_weight=`balanced'}, seed 42).
+
+\subsection{Evaluation Protocol}
+
+\paragraph{Unit-level split.}
+80 engine units are used for training and 20 for testing (seed 42 shuffle).
+All cycles from a given engine appear in exactly one partition, eliminating
+temporal leakage from cycle-level random splits.
+
+\paragraph{Primary metric.}
+Recall on the at-risk class: the fraction of at-risk cycles correctly detected.
+Weighted F1 is reported as a secondary reference.
+
+%%===========================================================================
+\section{Results}
+\label{sec:results}
+
+Table~\ref{tab:results} summarises performance on 4,291 test cycles from 20 held-out
+engine units.
+
+\begin{table}[h]
+\centering
+\caption{Classification on NASA C-MAPSS FD001 (20 held-out engines, 4,291 test cycles).
+At-risk support: 620 cycles. \textbf{Bold}: primary metric.}
+\label{tab:results}
+\vspace{4pt}
+\begin{tabular}{lcc}
+\toprule
+Model & At-Risk Recall & Weighted F1 \\
+\midrule
+LR -- health-window (1 feat.) & \textbf{0.98} & 0.9247 \\
+RF -- 21 raw sensors           & 0.88          & \textbf{0.9576} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Full classification reports.}
+
+\noindent\textit{Logistic Regression (Model A):}
+\begin{center}\small
+\begin{tabular}{lcccc}
+\toprule
+Class & Prec. & Recall & F1 & Support\\
+\midrule
+Healthy  & 1.00 & 0.91 & 0.95 & 3,671\\
+At-Risk  & 0.64 & \textbf{0.98} & 0.78 & 620\\
+\midrule
+Weighted & 0.94 & 0.92 & 0.92 & 4,291\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textit{Random Forest (Model B):}
+\begin{center}\small
+\begin{tabular}{lcccc}
+\toprule
+Class & Prec. & Recall & F1 & Support\\
+\midrule
+Healthy  & 0.98 & 0.97 & 0.97 & 3,671\\
+At-Risk  & 0.83 & 0.88 & 0.86 & 620\\
+\midrule
+Weighted & 0.96 & 0.96 & 0.96 & 4,291\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%%===========================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{Metric selection drives deployment outcomes.}
+Among the 620 at-risk test cycles, Model~A correctly identifies 607 (recall 0.98)
+while Model~B misses 74---labelling them healthy when they are within 30 cycles of
+failure.
+Each missed at-risk cycle represents an unwarned failure event.
+In industrial operations, an unwarned failure typically costs orders of magnitude more
+than an unnecessary inspection \cite{mobley2002maintenance}, making the 0.88 RF recall
+operationally inferior despite its higher weighted F1.
+
+\paragraph{Interpretability and deployability.}
+The health-window feature $h_{u,c}\in\{0,\ldots,10\}$ is a single integer.
+The logistic regression decision boundary is a threshold on this scalar, trivially
+communicable to operations staff and executable on low-power edge hardware---important
+for distributed IoT deployments where data centralisation is impractical.
+
+\paragraph{Precision trade-off.}
+Model~A's high recall comes at the cost of lower at-risk precision (0.64 vs.\ 0.83).
+Whether this trade-off is acceptable depends on the inspection cost structure.
+In high-value machinery (turbofan engines, wind turbines), inspection costs are
+negligible relative to failure costs and the trade-off is clearly warranted.
+In contexts with high per-inspection costs, the RF's higher precision may be preferred.
+
+\paragraph{Limitations.}
+The degradation threshold ($Q_{0.70}$) is a design choice.
+Future work should explore learnt thresholds (e.g.\ via anomaly detection),
+validate on FD002--FD004 (multiple operating conditions), and compare against LSTM
+and Transformer baselines on the binary classification task.
+
+%%===========================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+A single rolling degraded-state counter enables a logistic regression to achieve 0.98
+recall on at-risk engine cycles in NASA C-MAPSS FD001---10 points above a Random Forest
+trained on all 21 raw sensors (0.88).
+The Random Forest achieves higher weighted F1, but the cost asymmetry between missed
+failures and false alarms in predictive maintenance makes at-risk recall the primary
+criterion.
+Domain-informed feature engineering, even when it yields a single scalar, can outperform
+high-dimensional sensor ensembles when evaluation is aligned with deployment cost
+structure.
+The full pipeline is released as a reproducible Jupyter Notebook under the MIT licence.
+
+%%===========================================================================
+\section*{Code Availability}
+All code, preprocessing pipeline, and the NASA C-MAPSS FD001 training file are
+available at:
+\url{https://github.com/Puru2001pandey/industrial-telemetry-analytics-research}
+Results are reproduced by running the Phase~3B notebook cells.
+
+\section*{Acknowledgements}
+The author thanks the NASA Ames Prognostics Center of Excellence for making the
+C-MAPSS dataset publicly available.
+This work was conducted independently, without institutional funding.
+
+%%===========================================================================
+\bibliographystyle{plainnat}
+\begin{thebibliography}{8}
+
+\bibitem{jardine2006review}
+Jardine, A.K.S., Lin, D., and Banjevic, D. (2006).
+A review on machinery diagnostics and prognostics implementing condition-based maintenance.
+\textit{Mechanical Systems and Signal Processing}, 20(7):1483--1510.
+
+\bibitem{saxena2008damage}
+Saxena, A., Goebel, K., Simon, D., and Eklund, N. (2008).
+Damage propagation modeling for aircraft engine run-to-failure simulation.
+In \textit{Proc.\ Int.\ Conf.\ Prognostics and Health Management (PHM)}, Denver, CO.
+
+\bibitem{ramasso2014application}
+Ramasso, E. and Saxena, A. (2014).
+Performance benchmarking and analysis of prognostic methods for CMAPSS datasets.
+\textit{Int.\ J.\ Prognostics and Health Management}, 5(2):1--15.
+
+\bibitem{li2018remaining}
+Li, X., Ding, Q., and Sun, J.-Q. (2018).
+Remaining useful life estimation in prognostics using deep convolution neural networks.
+\textit{Reliability Engineering \& System Safety}, 172:1--11.
+
+\bibitem{wu2021temporal}
+Wu, J. et al.\ (2021).
+Data-driven remaining useful life prediction via multiple sensors with attention mechanism.
+\textit{Reliability Engineering \& System Safety}, 208:107340.
+
+\bibitem{heimes2008recurrent}
+Heimes, F.O. (2008).
+Recurrent neural networks for remaining useful life estimation.
+In \textit{Proc.\ Int.\ Conf.\ Prognostics and Health Management (PHM)}, Denver, CO.
+
+\bibitem{khelif2017direct}
+Khelif, R. et al.\ (2017).
+Direct remaining useful life estimation based on support vector regression.
+\textit{IEEE Trans.\ Industrial Electronics}, 64(3):2276--2285.
+
+\bibitem{mobley2002maintenance}
+Mobley, R.K. (2002).
+\textit{An Introduction to Predictive Maintenance}, 2nd ed.
+Butterworth-Heinemann.
+
+\end{thebibliography}
+
+\end{document}
