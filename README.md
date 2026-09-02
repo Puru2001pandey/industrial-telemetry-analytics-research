@@ -1,14 +1,26 @@
 # Industrial Telemetry Analytics: Recall-Optimised Failure Detection on NASA C-MAPSS FD001
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22259839.svg)](https://doi.org/10.5281/zenodo.22259839)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://python.org)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange?logo=jupyter)](https://jupyter.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Dataset](https://img.shields.io/badge/Dataset-NASA%20CMAPSS-red)](https://www.nasa.gov/intelligent-systems-division/)
-[![arXiv](https://img.shields.io/badge/arXiv-preprint-b31b1b)](arxiv_preprint.tex)
 
 > **Author:** Puru Pandey — B.Tech AI/ML, Galgotias University  
 > **Contact:** purupandey2001@gmail.com  
-> **Preprint:** `arxiv_preprint.tex` in this repository (arXiv submission pending)
+> **Preprint:** [Zenodo Record](https://zenodo.org/records/22259839) | **DOI:** [10.5281/zenodo.22259839](https://doi.org/10.5281/zenodo.22259839)
+
+```bibtex
+@article{pandey2026recall,
+  title        = {Recall-Optimised Failure Detection in Industrial Telemetry: A Rolling Degraded-State Counter Versus a 21-Sensor Random Forest on NASA C-MAPSS FD001},
+  author       = {Pandey, Puru},
+  journal      = {Zenodo Preprint},
+  year         = {2026},
+  month        = {sep},
+  doi          = {10.5281/zenodo.22259839},
+  url          = {https://doi.org/10.5281/zenodo.22259839}
+}
+```
 
 ---
 
