@@ -48,8 +48,8 @@ industrial-telemetry-analytics-research/
 │
 ├── results/
 │   ├── summary_metrics.csv      ← At-risk recall, precision, weighted F1 for both models
-│   ├── confusion_matrix_lr.csv  ← LR confusion matrix (TN=3329, FP=342, FN=12, TP=608)
-│   └── confusion_matrix_rf.csv  ← RF confusion matrix (TN=3559, FP=112, FN=74, TP=546)
+│   ├── confusion_matrix_lr.csv  ← LR confusion matrix (TN=3335, FP=336, FN=15, TP=605)
+│   └── confusion_matrix_rf.csv  ← RF confusion matrix (TN=3561, FP=110, FN=74, TP=546)
 │
 └── requirements.txt
 ```
