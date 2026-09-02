@@ -225,8 +225,12 @@ This 1-feature model has a trivially interpretable decision rule.
 
 \subsection{Model B: Random Forest Baseline}
 
-A 100-tree Random Forest is trained on all 21 standardised raw sensor columns
-(\texttt{class\_weight=`balanced'}, seed 42).
+A 100-tree Random Forest is trained on all 21 \emph{raw} sensor columns after
+applying a global \texttt{StandardScaler} (\texttt{class\_weight=`balanced'}, seed 42).
+The RF intentionally receives globally standardised rather than per-unit normalised
+inputs to reflect a realistic high-dimensional baseline: a practitioner would apply
+StandardScaler before training a Random Forest without the domain knowledge needed
+to choose the 14 informative sensors or compute the per-unit normalisation.
 
 \subsection{Evaluation Protocol}
 
@@ -316,8 +320,8 @@ LR misses 12 at-risk cycles; RF misses 74.}
  & \multicolumn{2}{c|}{LR} & \multicolumn{2}{c}{RF} \\
  & Pred.\ 0 & Pred.\ 1 & Pred.\ 0 & Pred.\ 1 \\
 \midrule
-Actual 0 & 3{,}329 & 342 & 3{,}559 & 112 \\
-Actual 1 & 12 & 608 & 74 & 546 \\
+Actual 0 & 3{,}335 & 336 & 3{,}561 & 110 \\
+Actual 1 & 15 & 605 & 74 & 546 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -393,21 +397,21 @@ while recall remains 1.5 points above the RF (0.952 vs.\ 0.937).
 
 The central finding is the confusion matrix.
 The Random Forest misses 74 at-risk cycles out of 620; the logistic regression misses
-12.
+15.
 Both models were evaluated on the same held-out engines with balanced class weights.
 The Random Forest has higher precision on at-risk predictions (0.83 vs.\ 0.64) and
 higher weighted F1 overall---by these aggregate measures it looks like the better
 model.
-But 74 undetected imminent failures versus 12 is not a small difference in a
+But 74 undetected imminent failures versus 15 is not a small difference in a
 safety-critical setting.
 Translating to a rough cost model: if a missed failure costs \$50,000 (unplanned
 downtime) and a false alarm costs \$5,000 (unnecessary inspection), the Random Forest
 incurs an expected failure cost of $74 \times \$50{,}000 = \$3{,}700{,}000$ from missed
-detections alone, against $12 \times \$50{,}000 = \$600{,}000$ for the logistic
+detections alone, against $15 \times \$50{,}000 = \$750{,}000$ for the logistic
 regression.
-The logistic regression generates more false alarms (342 vs.\ 112), adding $342 \times
-\$5{,}000 = \$1{,}710{,}000$ versus $112 \times \$5{,}000 = \$560{,}000$.
-Net expected cost: LR \$2.31M vs.\ RF \$4.26M---the simpler model is preferable under
+The logistic regression generates more false alarms (336 vs.\ 110), adding $336 \times
+\$5{,}000 = \$1{,}680{,}000$ versus $110 \times \$5{,}000 = \$550{,}000$.
+Net expected cost: LR \$2.43M vs.\ RF \$4.25M---the simpler model is preferable under
 any cost ratio where failures cost substantially more than inspections.
 
 The interpretability argument is secondary but relevant.
