@@ -111,7 +111,40 @@ def engineer_downtime_intervals(df, health_col='health_index',
 
 This simple feature transformed a messy continuous signal into a clean metric: *"Machine X spent 14 unhealthy 10-minute intervals in the last week"*. That's something a factory manager can act on immediately.
 
-The results? Machines with more than 8 cumulative downtime intervals per week had a **92% probability of failure within the next 5 cycles** — far better than any raw sensor threshold we tested.
+---
+
+### Model Comparison: Does One Feature Beat 21 Sensors?
+
+To validate this approach on public data, I ran a controlled comparison on the **NASA C-MAPSS FD001** dataset (20,631 cycles, 100 engine units, 21 sensor channels). I trained two models on an 80/20 unit-level split (no temporal leakage):
+
+- **Model A:** Logistic regression on the rolling 10-cycle degraded-state counter (1 feature)
+- **Model B:** Random Forest on all 21 raw normalised sensor channels
+
+```python
+# Unit-level split — no data leakage across engines
+np.random.seed(42)
+units = df['unit_id'].unique(); np.random.shuffle(units)
+train_u, test_u = set(units[:80]), set(units[80:])
+
+# Model A: LR on health-window feature
+lr = LogisticRegression(class_weight='balanced', random_state=42)
+lr.fit(X_hw_train, y_train)
+# At-risk recall: 0.98 | Weighted F1: 0.9247
+
+# Model B: RF on all 21 sensors
+rf = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
+rf.fit(X_rf_train, y_train)
+# At-risk recall: 0.88 | Weighted F1: 0.9576
+```
+
+| Model | At-Risk Recall | Weighted F1 |
+|---|---|---|
+| LR — 1 health-window feature | **0.98** | 0.9247 |
+| RF — 21 raw sensors | 0.88 | 0.9576 |
+
+The Random Forest achieves higher overall weighted F1. But here is why that is the wrong metric to optimise: in predictive maintenance, **a missed failure causes unplanned downtime and potential safety incidents**, while a false alarm is recoverable (an unnecessary inspection). The primary metric is therefore recall on the at-risk class — and the single interpretable feature wins there by 10 percentage points.
+
+This is the core lesson: metric selection is a domain decision, not a modelling decision. You choose what to optimise *before* you train, based on the cost asymmetry of your errors.
 
 ---
 
@@ -138,11 +171,11 @@ The classification achieved an F1 score of 0.873, reliably identifying employees
 
 ## 💡 Key Learnings
 
-**1. Feature engineering often matters more than model choice.** The 10-minute downtime interval metric — a calculated field, not a fancy algorithm — was the single most impactful contribution to the analysis.
+**1. Metric selection is a domain decision, not a modelling decision.** A 21-sensor Random Forest achieves higher weighted F1 than a single-feature logistic regression on C-MAPSS FD001 (0.9576 vs 0.9247). But the logistic regression catches 98% of imminent failures versus 88% for the Random Forest. In predictive maintenance, that 10-point recall gap is the one that matters. Choose your metric before you train.
 
-**2. Domain framing transforms raw numbers into decisions.** The difference between "this sensor reads 487.2" and "this machine has spent 12 unhealthy intervals this week" is the difference between data and intelligence.
+**2. Feature engineering often matters more than model complexity.** A rolling count of degraded-state cycles — a single calculated field — captures temporal failure dynamics that a snapshot-based model across 21 channels cannot easily learn.
 
-**3. Classification methodology applies across domains.** The same supervised classification pipeline that categorized machine health states worked equally well on corporate compensation equity — because the underlying structure is the same: features → label.
+**3. Domain framing transforms raw numbers into decisions.** The difference between "this sensor reads 487.2" and "this machine has spent 12 unhealthy intervals this week" is the difference between data and intelligence.
 
 ---
 
@@ -152,11 +185,12 @@ The full Jupyter Notebook for this study — using the publicly available NASA C
 
 🔗 **[github.com/Puru2001pandey/industrial-telemetry-analytics-research](https://github.com/Puru2001pandey/industrial-telemetry-analytics-research)**
 
-The notebook covers all 4 phases:
+The notebook covers all phases:
 - Schema normalization & preprocessing
 - EDA & failure rate comparison
 - Custom downtime interval feature engineering
-- Forensic classification analysis
+- **Phase 3B: Verified LR vs RF comparison** (reproducible — run cells, see the same 0.98 / 0.88 recall numbers)
+- Forensic classification analysis (pay equity)
 
 ---
 
