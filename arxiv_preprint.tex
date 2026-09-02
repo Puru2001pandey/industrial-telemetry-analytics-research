@@ -121,15 +121,15 @@ engine-specific baseline offsets, so any meaningful comparison requires per-unit
 normalisation before modelling.
 Without it, differences between engines swamp the degradation signal.
 
-What I could not find in the literature is a direct, cleanly-controlled comparison
-between a single domain-informed feature and a full-sensor ensemble, evaluated
-specifically on at-risk recall rather than RMSE, accuracy, or overall F1.
-Papers that use simpler features tend to compare against other simple features.
-Papers that use ensemble methods tend to optimise aggregate metrics.
-The narrow question---does one number derived from expert knowledge of degradation
-beat 21 raw channels on the metric that deployment actually requires?---does not seem
-to have been asked this directly.
-That gap is what this paper fills.
+The literature lacks a direct, cleanly-controlled comparison between a single
+domain-informed feature and a full-sensor ensemble evaluated specifically on at-risk
+recall rather than RMSE, accuracy, or overall weighted F1.
+Papers that adopt simpler features tend to compare against other simple features;
+papers that use ensemble methods tend to optimise aggregate metrics.
+The narrow question---does one number derived from domain knowledge of degradation
+dynamics beat 21 raw channels on the metric that deployment actually requires?---does
+not appear to have been posed directly in prior work.
+That gap motivates this study.
 
 
 
@@ -200,6 +200,16 @@ engine's score distribution:
   g_{u,c}=\mathbf{1}\!\left[d_{u,c}\geq Q_{0.70}(\{d_{u,c'}\}_{c'})\right]
 \end{equation}
 
+\noindent\textbf{Note on look-ahead.}
+The percentile $Q_{0.70}$ is computed over the \emph{full} run-to-failure trajectory
+of each engine, including cycles that fall in the at-risk window.
+For the training engines this introduces a mild look-ahead bias: the threshold
+is influenced by the degraded-phase readings it is intended to detect.
+In a live deployment the threshold would instead be estimated from historical
+healthy-phase data; post-hoc analysis on archived run-to-failure logs---the setting
+evaluated here---is the scenario where full-trajectory percentiles are appropriate.
+This limitation is acknowledged explicitly in Section~\ref{sec:sensitivity}.
+
 The \textbf{health-window feature} is the count of degraded cycles in the 10-cycle
 rolling window ending at cycle $c$:
 \begin{equation}
@@ -252,7 +262,17 @@ RF -- 21 raw sensors           & 0.88          & \textbf{0.9576} \\
 \end{tabular}
 \end{table}
 
-\paragraph{Full classification reports.}
+\paragraph{Statistical stability.}
+To assess whether these results depend on the specific 80/20 split, the experiment
+was repeated 30 times with seeds $0$--$29$.
+The LR achieved a mean at-risk recall of $\mathbf{0.957 \pm 0.018}$ versus
+$\mathbf{0.916 \pm 0.026}$ for the RF (paired $t$-test: $t = 9.98$, $p < 0.0001$).
+The LR exceeded RF recall in 29 of 30 splits; in the one tied split (seed 11), both
+achieved 0.977.
+The single-split result in Table~\ref{tab:results} (seed 42) is representative of this
+distribution.
+
+
 
 \noindent\textit{Logistic Regression (Model A):}
 \begin{center}\small
@@ -315,6 +335,10 @@ For within-analysis consistency, both models receive per-unit min-max normalised
 inputs in this section (the RF therefore receives normalised rather than globally
 standardised sensors, causing its recall to differ slightly from
 Table~\ref{tab:results}).
+The Random Forest recall remains constant across variations in $w$ and $\tau$ because
+its input features (the raw sensor channels) are independent of the windowing
+parameters; this provides a fixed baseline against which the LR's parameter sensitivity
+is measured.
 
 \begin{table}[h]
 \centering
@@ -437,17 +461,18 @@ at-risk engine cycles in NASA C-MAPSS FD001.
 A Random Forest on all 21 sensor channels gets 0.88.
 The Random Forest has higher weighted F1.
 
-I think the right way to read this result is not ``domain features always win'' but
-``evaluation metric choice is a design decision with operational consequences.''
-If you deploy a model that maximises weighted F1 on a 14\% minority-class dataset,
-you are likely deploying a model that performs well on paper and misses failures in
-practice.
-The choice of what to optimise should come from the cost structure of the problem,
-not from which number looks best in a table.
+The results suggest that evaluation metric choice is a design decision with operational
+consequences, not a secondary concern.
+Deploying a model that maximises weighted F1 on a 14\% minority-class dataset is likely
+to deploy a model that performs well on paper and misses failures in practice.
+The appropriate metric should be determined by the cost structure of the deployment
+context, not by which number looks best in a comparison table.
 
 The full pipeline is available on GitHub under the MIT licence.
-Clone the repository, run the Phase~3B notebook cells, and the numbers in this paper
-reproduce exactly.
+Clone the repository and run the \texttt{run\_reproduction.ipynb} notebook to reproduce
+every number in this paper.
+
+
 
 
 
@@ -456,7 +481,11 @@ reproduce exactly.
 All code, preprocessing pipeline, and the NASA C-MAPSS FD001 training file are
 available at:
 \url{https://github.com/Puru2001pandey/industrial-telemetry-analytics-research}
-Results are reproduced by running the Phase~3B notebook cells.
+
+To reproduce all results: place \texttt{train\_FD001.txt} in \texttt{data/} and run
+\texttt{run\_reproduction.ipynb}.
+The notebook will raise a \texttt{FileNotFoundError} if the data file is absent.
+
 
 \section*{Acknowledgements}
 The author thanks the NASA Ames Prognostics Center of Excellence for making the

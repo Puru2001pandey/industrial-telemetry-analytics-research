@@ -1,204 +1,172 @@
-# Industrial Telemetry Analytics: Machine Failure Pattern Investigation
-### An Applied Data Research Study in Predictive Maintenance & Forensic Data Classification
+﻿# Industrial Telemetry Analytics: Recall-Optimised Failure Detection on NASA C-MAPSS FD001
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://python.org)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange?logo=jupyter)](https://jupyter.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Dataset](https://img.shields.io/badge/Dataset-NASA%20CMAPSS-red)](https://www.nasa.gov/intelligent-systems-division/)
-[![Medium](https://img.shields.io/badge/Medium-Published-black?logo=medium)](https://medium.com/@purupandey2001/what-60mb-of-factory-sensor-data-taught-me-about-research-methodology-4f322c4fd6e6)
+[![arXiv](https://img.shields.io/badge/arXiv-preprint-b31b1b)](arxiv_preprint.tex)
 
-> **Research Domain:** Industrial IoT Reliability · Predictive Maintenance · Forensic Data Analytics  
 > **Author:** Puru Pandey — B.Tech AI/ML, Galgotias University  
-> **Inspired by:** Applied forensic analytics work at Deloitte Australia (Technology Analyst Simulation, Jul 2026)  
-> **Published Write-up:** [What 60MB of Factory Sensor Data Taught Me About Research Methodology](https://medium.com/@purupandey2001/what-60mb-of-factory-sensor-data-taught-me-about-research-methodology-4f322c4fd6e6) — Medium
+> **Contact:** purupandey2001@gmail.com  
+> **Preprint:** `arxiv_preprint.tex` in this repository (arXiv submission pending)
 
 ---
 
-## 📋 Abstract
+## Abstract
 
-This project looks at machine failure patterns in industrial manufacturing using IoT sensor data. Using EDA, custom feature engineering, and Tableau dashboards, we figure out which factories have the worst failure rates and why. A second analysis applies the same classification approach to compensation data, checking for pay equity gaps across job roles. The full methodology runs on NASA's publicly available C-MAPSS turbofan dataset, which has the same structure as real factory sensor streams.
-
-**Key contributions:**
-1. A custom temporal feature (10-minute health window counts) that outperformed a 21-sensor Random Forest baseline
-2. Tableau dashboards for comparing failure patterns across different factory sites
-3. A classification pipeline for pay equity analysis, reused from the same ML approach
-
----
-
-## 🔬 Research Questions
-
-| # | Research Question |
-|---|---|
-| RQ1 | Which facility / machine type exhibits the highest equipment failure rate, and what operational conditions precede failure events? |
-| RQ2 | Can custom temporal feature engineering (discretized downtime intervals) improve the granularity and interpretability of failure signal detection? |
-| RQ3 | Does a supervised classification methodology reliably categorize structured equity indices across organizational hierarchies in forensic compensation datasets? |
+This study compares a logistic regression trained on a single rolling 10-cycle
+degraded-state counter against a 100-tree Random Forest trained on all 21 raw sensor
+channels from the NASA C-MAPSS FD001 benchmark (20,631 cycles, 100 engine units).
+Both models are evaluated on a unit-level 80/20 split (no temporal leakage).
+The primary metric is recall on the at-risk class — cycles within 30 of engine failure —
+because in predictive maintenance, a missed failure costs far more than a false alarm.
 
 ---
 
-## 📂 Repository Structure
+## Key Findings
+
+- A logistic regression on a **single rolling 10-cycle degraded-state counter** achieves **0.98 recall** on at-risk cycles (seed 42).
+- A 100-tree Random Forest on **all 21 raw sensor channels** achieves **0.88 recall** on the same test set.
+- The RF has higher weighted F1 (0.9576 vs. 0.9247), but this metric aggregates across classes and is misleading when missed failures cost orders of magnitude more than false alarms.
+- Across 30 random seeds: LR mean recall **0.957 ± 0.018** vs. RF **0.916 ± 0.026** (paired t-test p < 0.0001; LR wins 29/30 splits).
+- Sensitivity analysis across window lengths (5–20 cycles) and percentile thresholds (50–90%) confirms the LR recall advantage is not an artefact of a single lucky parameter setting.
+
+---
+
+## Repository Structure
 
 ```
 industrial-telemetry-analytics-research/
 │
-├── README.md                          ← This file (research overview)
-├── analysis.ipynb                     ← Main research notebook (NASA CMAPSS)
-├── forensic_classification.ipynb      ← Secondary: compensation classification study
+├── README.md                    ← This file
+├── arxiv_preprint.tex           ← Full LaTeX paper (arXiv submission pending)
+├── run_reproduction.ipynb       ← Standalone reproduction notebook (paper results)
+├── analysis.ipynb               ← Full exploratory research notebook
 │
 ├── data/
-│   ├── README_data.md                 ← Data source documentation
-│   └── sample_synthetic.csv          ← Synthetic demo data (no confidential data)
+│   └── train_FD001.txt          ← NASA C-MAPSS FD001 (place here before running)
 │
-├── visuals/
-│   ├── failure_rate_by_unit.png
-│   ├── sensor_correlation_heatmap.png
-│   ├── downtime_intervals_distribution.png
-│   └── classification_report.png
-│
-├── reports/
-│   └── research_summary.md           ← Findings summary (structured as a mini-paper)
+├── results/
+│   ├── summary_metrics.csv      ← At-risk recall, precision, weighted F1 for both models
+│   ├── confusion_matrix_lr.csv  ← LR confusion matrix (TN=3329, FP=342, FN=12, TP=608)
+│   └── confusion_matrix_rf.csv  ← RF confusion matrix (TN=3559, FP=112, FN=74, TP=546)
 │
 └── requirements.txt
 ```
 
 ---
 
-## 📊 Dataset
+## How to Reproduce
 
-### Primary Dataset: NASA C-MAPSS (Commercial Modular Aero-Propulsion System Simulation)
-
-| Property | Details |
-|---|---|
-| **Source** | NASA Intelligent Systems Division |
-| **URL** | https://www.nasa.gov/intelligent-systems-division/ |
-| **Type** | Time-series engine sensor telemetry |
-| **Records** | ~20,000+ operational cycles |
-| **Features** | 21 sensor readings + 3 operational settings |
-| **Target** | Remaining Useful Life (RUL) / Failure detection |
-| **Structural Analogy** | Directly comparable to factory machine telemetry streams |
-
-> **Why NASA CMAPSS?** This dataset contains multi-sensor time-series readings from aircraft turbofan engines under varying operating conditions — structurally identical to the industrial factory telemetry analyzed in the original research context (JSON sensor streams, machine health degradation, failure threshold detection).
-
----
-
-## 🛠️ Methodology
-
-```
-Phase 1: Data Ingestion & Preprocessing
-    ↓ JSON/CSV schema normalization
-    ↓ Missing value treatment & outlier analysis
-    ↓ Temporal alignment across machine units
-
-Phase 2: Exploratory Data Analysis (EDA)
-    ↓ Sensor distribution analysis per machine type
-    ↓ Cross-facility failure rate comparison
-    ↓ Correlation heatmaps & time-series trend plots
-
-Phase 3: Feature Engineering
-    ↓ Custom Temporal Metric: Discretized 10-minute downtime interval encoding
-    ↓ Rolling window statistics (mean, std, slope) per sensor
-    ↓ Health Index (HI) construction from multi-sensor fusion
-
-Phase 4: Visual Analytics
-    ↓ Multi-dimensional Tableau-style dashboards (Plotly/Seaborn)
-    ↓ Failure rate comparison across units/facilities
-    ↓ Bottleneck pattern visualization
-
-Phase 5: Classification Analysis (Forensic Strand)
-    ↓ Supervised classification on structured equity dataset
-    ↓ Label encoding & categorical feature treatment
-    ↓ Model evaluation: accuracy, precision, recall, F1
-```
-
----
-
-## 🔑 Key Findings
-
-> *(Findings from the NASA CMAPSS analysis — methodology mirrors the original forensic study)*
-
-1. **Machine Unit Failure Rates Vary Significantly:** Unit groups under operational setting [FD003] exhibited failure rates approximately **2.3× higher** than units under setting [FD001], consistent with real-world findings where specific factory conditions drive disproportionate downtime.
-
-2. **Custom Downtime Intervals Improve Signal Resolution:** The engineered 10-minute interval feature reduced noise in health signal detection by **~18%** compared to raw sensor readings, enabling earlier identification of degradation onset (avg. 47 cycles before failure threshold).
-
-3. **Sensor Clusters Predict Failure:** Sensors 2, 3, 4, 7, 11, 12, 15 exhibit strong correlation with RUL degradation (Pearson r > 0.7), forming a reliable multi-variate failure predictor set.
-
-4. **Classification Accuracy on Structured Equity Data:** A Random Forest classifier achieved **F1 = 0.87** in categorizing equity index classes across organizational role tiers, demonstrating robust forensic classification capability on structured tabular datasets.
-
----
-
-## 📈 Visualizations
-
-### Failure Rate by Machine Unit
-> *(see `visuals/failure_rate_by_unit.png`)*
-
-### Sensor Correlation Heatmap
-> *(see `visuals/sensor_correlation_heatmap.png`)*
-
-### Custom Downtime Interval Distribution
-> *(see `visuals/downtime_intervals_distribution.png`)*
-
----
-
-## ⚙️ How to Run
+> **Data is not committed to this repository.** Place `train_FD001.txt` in `data/`
+> before running. The notebook raises `FileNotFoundError` if the file is absent.
 
 ```bash
-# 1. Clone the repository
+# 1. Clone
 git clone https://github.com/Puru2001pandey/industrial-telemetry-analytics-research.git
 cd industrial-telemetry-analytics-research
 
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Download NASA CMAPSS dataset
-# Visit: https://www.nasa.gov/intelligent-systems-division/
-# Place train_FD001.txt through train_FD004.txt in /data/
+# 3. Download data
+# train_FD001.txt is available from:
+# https://raw.githubusercontent.com/LahiruJayasinghe/RUL-Net/master/CMAPSSData/train_FD001.txt
+# Place it in: data/train_FD001.txt
 
-# 4. Launch the notebook
-jupyter notebook analysis.ipynb
+# 4. Reproduce paper results
+jupyter notebook run_reproduction.ipynb
 ```
 
 ---
 
-## 📦 Requirements
+## Dataset
+
+**NASA C-MAPSS FD001** — Commercial Modular Aero-Propulsion System Simulation
+
+| Property | Value |
+|---|---|
+| Source | NASA Intelligent Systems Division |
+| Rows | 20,631 operational cycles |
+| Engine units | 100 (run-to-failure) |
+| Sensor channels | 21 |
+| Operating conditions | 1 (FD001 subset) |
+| At-risk definition | Last 30 cycles before failure |
+| Class balance | 85.6% healthy / 14.4% at-risk |
+
+---
+
+## Methodology Summary
 
 ```
-pandas>=2.0.0
-numpy>=1.24.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
-plotly>=5.14.0
-scikit-learn>=1.3.0
-scipy>=1.10.0
-jupyter>=1.0.0
+Phase 1 — Data Ingestion
+    Per-unit RUL calculation; binary label (at-risk = last 30 cycles)
+
+Phase 2 — Sensor Preprocessing
+    Retain 14 sensors with meaningful variance in FD001
+    Per-unit min-max normalisation (Ramasso & Saxena 2014)
+    Rising sensors: s02,s03,s04,s07,s08,s09,s11,s12,s13,s14,s15
+    Falling sensors: s17,s20,s21
+
+Phase 3 — Feature Engineering
+    Degradation composite score (mean rising + inverted mean falling) / 2
+    Binary degraded flag: score >= 70th-percentile of engine's distribution
+    Health-window feature: count of degraded cycles in 10-cycle rolling window
+
+Phase 4 — Classification
+    Model A: L2-regularised logistic regression on health-window (1 feature)
+    Model B: 100-tree Random Forest on all 21 normalised sensor channels
+    Both: class_weight='balanced'; unit-level 80/20 split (seed 42)
+
+Phase 5 — Evaluation
+    Primary metric: at-risk recall
+    Secondary: weighted F1, precision, confusion matrix
+    Stability: 30-seed repeat with paired t-test
+    Sensitivity: grid search over window length {5,10,15,20} and threshold {50-90%}
 ```
 
 ---
 
-## 🔗 Related Work & References
+## Results
 
-1. Saxena, A., & Goebel, K. (2008). *Turbofan Engine Degradation Simulation Data Set.* NASA Ames Research Center, Moffett Field, CA.
-2. Zhao, R., et al. (2019). *Deep learning and its applications to machine health monitoring.* Mechanical Systems and Signal Processing, 115, 213–237.
-3. Li, X., et al. (2018). *Remaining useful life estimation in prognostics using deep convolution neural networks.* Reliability Engineering & System Safety, 172, 1–11.
+| Model | At-Risk Recall | At-Risk Precision | Weighted F1 |
+|---|---|---|---|
+| LR — health-window (1 feature) | **0.98** | 0.64 | 0.9247 |
+| RF — 21 sensor channels | 0.88 | 0.83 | **0.9576** |
 
----
+Confusion matrices (20 held-out engines, 4,291 test cycles):
 
-## 📜 Limitations & Future Work
-
-**Limitations:**
-- Analysis conducted on a simulation environment (NASA CMAPSS) as a methodological proxy — real-world factory datasets may contain additional noise, sensor drift, and operational complexity.
-- Classification study uses synthetic equity data for demonstration; real-world forensic datasets require privacy-preserving techniques.
-
-**Future Research Directions:**
-- Apply LSTM / Transformer-based models for remaining useful life (RUL) prediction
-- Integrate federated learning to analyze multi-factory data without centralizing sensitive telemetry
-- Extend equity classification to multi-class intersectional analysis (gender × role × location)
+| | Predicted Healthy | Predicted At-Risk |
+|---|---|---|
+| **LR — Actual Healthy** | 3,329 | 342 |
+| **LR — Actual At-Risk** | **12** | 608 |
+| **RF — Actual Healthy** | 3,559 | 112 |
+| **RF — Actual At-Risk** | **74** | 546 |
 
 ---
 
-## 📄 License
+## Limitations
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+- FD001 is the simplest C-MAPSS subset (single operating condition, single fault mode). Results may not transfer to FD002–FD004.
+- The 70th-percentile threshold and 10-cycle window length are design choices, not derived from physical principles.
+- The percentile is computed over full engine trajectories (post-mortem). Live deployment requires estimating the threshold from healthy-phase data only.
+- No comparison against simpler baselines (single-sensor threshold, moving average).
+
+---
+
+## References
+
+1. Saxena, A., Goebel, K., Simon, D., & Eklund, N. (2008). Damage propagation modeling for aircraft engine run-to-failure simulation. *Proc. PHM*.
+2. Ramasso, E. & Saxena, A. (2014). Performance benchmarking and analysis of prognostic methods for CMAPSS datasets. *IJPHM*, 5(2).
+3. Li, X., Ding, Q., & Sun, J.-Q. (2018). Remaining useful life estimation using deep CNNs. *RESS*, 172, 1–11.
+4. Mobley, R.K. (2002). *An Introduction to Predictive Maintenance*, 2nd ed.
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
 
 ---
 
 *Puru Pandey · purupandey2001@gmail.com · [LinkedIn](https://linkedin.com/in/puru-pandey-851271229) · [GitHub](https://github.com/Puru2001pandey)*
-
