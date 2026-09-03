@@ -1,6 +1,6 @@
 # Industrial Telemetry Analytics Research — C‑MAPSS FD001
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22259837.svg)](https://doi.org/10.5281/zenodo.22259837)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22285377.svg)](https://doi.org/10.5281/zenodo.22285377)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
@@ -9,7 +9,7 @@ This repository contains the corrected code and results for the paper:
 
 > **Recall-Optimised Failure Detection in Industrial Telemetry:**  
 > *A Rolling Degraded-State Counter Versus a 21-Sensor Random Forest on NASA C-MAPSS FD001*  
-> — *Puru Pandey* (Preprint, revised September 2026, [DOI: 10.5281/zenodo.22259837](https://doi.org/10.5281/zenodo.22259837))
+> — *Puru Pandey* (Preprint, revised September 2026, [Zenodo Record v3](https://zenodo.org/records/22285377) | [DOI: 10.5281/zenodo.22285377](https://doi.org/10.5281/zenodo.22285377))
 
 ---
 
@@ -91,6 +91,8 @@ All output logs and tables are saved in the `results/` folder:
 ## 📁 Repository Structure
 ```
 .
+├── preprint_corrected_verified.pdf # Compiled paper PDF (Zenodo v3)
+├── preprint_corrected_verified.tex # Full LaTeX paper source
 ├── corrected_pipeline.py          # Main leak‑free pipeline
 ├── run_prompts_5_6.py             # Confusion matrices + per‑engine results
 ├── data/                          # Place train_FD001.txt here
@@ -116,8 +118,9 @@ If you use this code or results, please cite the associated paper:
   author={Pandey, Puru},
   year={2026},
   publisher={Zenodo},
-  doi={10.5281/zenodo.22259837},
-  url={https://doi.org/10.5281/zenodo.22259837}
+  version={v3},
+  doi={10.5281/zenodo.22285377},
+  url={https://doi.org/10.5281/zenodo.22285377}
 }
 ```
 

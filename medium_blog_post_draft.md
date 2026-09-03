@@ -1,11 +1,11 @@
 ﻿# From Raw Telemetry to Operational Intelligence
 ## A Data Analytics Study on Industrial Machine Failure Patterns
-**By Puru Pandey** | Data Analyst & AI/ML Researcher | [Zenodo Preprint (DOI: 10.5281/zenodo.22259837)](https://doi.org/10.5281/zenodo.22259837) | [GitHub](https://github.com/Puru2001pandey/industrial-telemetry-analytics-research) | [LinkedIn](https://linkedin.com/in/puru-pandey-851271229)
+**By Puru Pandey** | Data Analyst & AI/ML Researcher | [Zenodo Preprint (DOI: 10.5281/zenodo.22285377)](https://doi.org/10.5281/zenodo.22285377) | [GitHub](https://github.com/Puru2001pandey/industrial-telemetry-analytics-research) | [LinkedIn](https://linkedin.com/in/puru-pandey-851271229)
 
 ---
 
 *Reading time: ~8 minutes*  
-*Preprint published on Zenodo: [doi.org/10.5281/zenodo.22259837](https://doi.org/10.5281/zenodo.22259837)*
+*Preprint published on Zenodo: [doi.org/10.5281/zenodo.22285377](https://doi.org/10.5281/zenodo.22285377)*
 
 ---
 
@@ -184,7 +184,7 @@ The classification achieved an F1 score of 0.873, reliably identifying employees
 
 The full reproduction pipeline and dataset are available on GitHub and archived on Zenodo:
 
-ðŸ”— **Preprint:** [https://doi.org/10.5281/zenodo.22259837](https://doi.org/10.5281/zenodo.22259837)  
+ðŸ”— **Preprint:** [https://doi.org/10.5281/zenodo.22285377](https://doi.org/10.5281/zenodo.22285377)  
 ðŸ”— **Repository:** [github.com/Puru2001pandey/industrial-telemetry-analytics-research](https://github.com/Puru2001pandey/industrial-telemetry-analytics-research)
 
 You can run `run_reproduction.ipynb` directly to reproduce:
