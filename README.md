@@ -9,7 +9,7 @@ This repository contains the corrected code and results for the paper:
 
 > **Recall-Optimised Failure Detection in Industrial Telemetry:**  
 > *A Rolling Degraded-State Counter Versus a 21-Sensor Random Forest on NASA C-MAPSS FD001*  
-> — *Puru Pandey* (Preprint, revised September 2026, [Zenodo Record v3](https://zenodo.org/records/22285377) | [DOI: 10.5281/zenodo.22285377](https://doi.org/10.5281/zenodo.22285377))
+> — *Puru Pandey* (Preprint, revised September 2026, Version 3, [DOI: 10.5281/zenodo.22285377](https://doi.org/10.5281/zenodo.22285377))
 
 ---
 
