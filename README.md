@@ -98,10 +98,7 @@ All output logs and tables are saved in the `results/` folder:
 ├── data/                          # Place train_FD001.txt here
 ├── results/                       # Generated tables and logs
 │   ├── confusion_matrices.txt     # Full confusion matrices & cost model
-│   ├── per_engine_leak_free_results.txt # Per-engine burn-in calibration
-│   ├── summary_metrics.csv
-│   ├── confusion_matrix_lr.csv
-│   └── confusion_matrix_rf.csv
+│   └── per_engine_leak_free_results.txt # Per-engine burn-in calibration
 ├── summary.txt                    # Comprehensive experiment summary
 └── README.md                      # This file
 ```

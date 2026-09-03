@@ -1,3 +1,0 @@
-model,preprocessing,at_risk_recall,at_risk_precision,weighted_f1,seed,n_train_engines,n_test_engines
-LR_health_window_1feat,per_unit_minmax_normalisation,0.9758,0.6429,0.9247,42,80,20
-RF_21_raw_sensors,StandardScaler_global,0.8806,0.8323,0.9576,42,80,20
