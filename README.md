@@ -1,6 +1,6 @@
 # Industrial Telemetry Analytics: Recall-Optimised Failure Detection on NASA C-MAPSS FD001
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22259839.svg)](https://doi.org/10.5281/zenodo.22259839)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22259837.svg)](https://doi.org/10.5281/zenodo.22259837)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://python.org)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange?logo=jupyter)](https://jupyter.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
@@ -8,7 +8,7 @@
 
 > **Author:** Puru Pandey — B.Tech AI/ML, Galgotias University  
 > **Contact:** purupandey2001@gmail.com  
-> **Preprint:** [Zenodo Record](https://zenodo.org/records/22259839) | **DOI:** [10.5281/zenodo.22259839](https://doi.org/10.5281/zenodo.22259839)
+> **Preprint:** [Zenodo Record (v2)](https://zenodo.org/records/22275197) | **Concept DOI (Latest):** [10.5281/zenodo.22259837](https://doi.org/10.5281/zenodo.22259837)
 
 ```bibtex
 @article{pandey2026recall,
@@ -17,8 +17,8 @@
   journal      = {Zenodo Preprint},
   year         = {2026},
   month        = {sep},
-  doi          = {10.5281/zenodo.22259839},
-  url          = {https://doi.org/10.5281/zenodo.22259839}
+  doi          = {10.5281/zenodo.22259837},
+  url          = {https://doi.org/10.5281/zenodo.22259837}
 }
 ```
 
