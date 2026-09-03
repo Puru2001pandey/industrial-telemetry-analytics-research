@@ -51,7 +51,7 @@ because in predictive maintenance, a missed failure costs far more than a false 
 industrial-telemetry-analytics-research/
 │
 ├── README.md                    ← This file
-├── arxiv_preprint.tex           ← Full LaTeX paper (published on Zenodo)
+├── zenodo.tex                   ← Full LaTeX paper (published on Zenodo)
 ├── run_reproduction.ipynb       ← Standalone reproduction notebook (paper results)
 ├── analysis.ipynb               ← Full exploratory research notebook
 │
