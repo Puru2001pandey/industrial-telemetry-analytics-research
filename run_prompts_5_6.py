@@ -217,7 +217,7 @@ def execute_prompt_6(df):
     out.append("30-SEED CROSS-VALIDATION STABILITY (Per-Engine Leak-Free):")
     out.append(f"  LR Mean Recall: {lr_rec.mean():.4f} +/- {lr_rec.std():.4f}  (Range: {lr_rec.min():.3f} - {lr_rec.max():.3f})")
     out.append(f"  RF Mean Recall: {rf_rec.mean():.4f} +/- {rf_rec.std():.4f}  (Range: {rf_rec.min():.3f} - {rf_rec.max():.3f})")
-    out.append(f"  Paired t-test:  t = {t_stat:.2f}, p = {p_val:.8f}")
+    out.append(f"  Paired t-test:  t = {t_stat:.2f}, p = {p_val:.3e}")
     out.append(f"  LR Wins:        {sum(lr_rec > rf_rec)} / 30 splits")
     out.append("=" * 85)
     

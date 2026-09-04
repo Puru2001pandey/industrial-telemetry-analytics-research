@@ -65,25 +65,25 @@ To ensure the result is not an artefact of a single train/test split, we repeate
 *Note: `train_FD001.txt` is NOT redistributed in this repository due to original data licensing and must be obtained directly from NASA.*  
 Download the archive from the [NASA C‑MAPSS dataset repository](https://data.nasa.gov/docs/legacy/CMAPSSData.zip), extract it, and place `train_FD001.txt` into the `data/` directory.
 
-### 2. Run the corrected pipeline
-```bash
-python corrected_pipeline.py
-```
-This runs the global‑threshold leak‑free experiment (primary result, sensitivity grid, and 30‑seed stability).
+### 2. Run the reproduction scripts
+- **Primary result + sensitivity grid:**
+  ```bash
+  python corrected_pipeline.py
+  ```
+- **Confusion matrices + cost analysis (Table 1, Table 2):**
+  ```bash
+  python run_prompts_5_6.py
+  ```
+- **Cost grid, nested protocol, selection analyses (Table 4, Table 5, Sections 6.4–6.5):**
+  ```bash
+  python nested_cv.py
+  ```
 
-### 3. Run the full confusion matrix & cost analysis
-```bash
-python run_prompts_5_6.py
-```
-This generates:
-- Confusion matrices for LR, RF, and three baselines.
-- Operational cost comparison under the \$50k/\$5k failure/inspection cost ratio.
-- Per‑engine leak‑free calibration results (more realistic for live deployment).
-
-### 4. View the raw results
+### 3. View the raw results
 All output logs and tables are saved in the `results/` folder:
 - `results/confusion_matrices.txt`
 - `results/per_engine_leak_free_results.txt`
+- `results/nested_cv_results.txt`
 - `summary.txt`
 
 ---
@@ -93,12 +93,14 @@ All output logs and tables are saved in the `results/` folder:
 .
 ├── preprint_corrected_verified.pdf # Compiled paper PDF (Zenodo v3)
 ├── preprint_corrected_verified.tex # Full LaTeX paper source
-├── corrected_pipeline.py          # Main leak‑free pipeline
-├── run_prompts_5_6.py             # Confusion matrices + per‑engine results
+├── corrected_pipeline.py          # Primary result + sensitivity grid
+├── run_prompts_5_6.py             # Confusion matrices + cost analysis
+├── nested_cv.py                   # Cost grid, nested protocol, selection analyses
 ├── data/                          # Place train_FD001.txt here
 ├── results/                       # Generated tables and logs
 │   ├── confusion_matrices.txt     # Full confusion matrices & cost model
-│   └── per_engine_leak_free_results.txt # Per-engine burn-in calibration
+│   ├── per_engine_leak_free_results.txt # Per-engine burn-in calibration
+│   └── nested_cv_results.txt      # Nested CV, cost grid & optimism analyses
 ├── drafts/                        # Working drafts & write-ups (not part of pipeline)
 │   ├── medium_blog_post_draft.md
 │   ├── medium_paste.html

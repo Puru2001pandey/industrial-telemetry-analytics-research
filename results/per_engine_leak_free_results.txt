@@ -13,6 +13,6 @@ PRIMARY SPLIT (seed=42):
 30-SEED CROSS-VALIDATION STABILITY (Per-Engine Leak-Free):
   LR Mean Recall: 1.0000 +/- 0.0000  (Range: 1.000 - 1.000)
   RF Mean Recall: 0.8977 +/- 0.0284  (Range: 0.840 - 0.958)
-  Paired t-test:  t = 19.38, p = 0.00000000
+  Paired t-test:  t = 19.38, p = 3.841e-18
   LR Wins:        30 / 30 splits
 =====================================================================================
