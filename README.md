@@ -1,6 +1,6 @@
 # Industrial Telemetry Analytics Research — C‑MAPSS FD001
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22285377.svg)](https://doi.org/10.5281/zenodo.22285377)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22304632.svg)](https://doi.org/10.5281/zenodo.22304632)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
@@ -9,7 +9,7 @@ This repository contains the corrected code and results for the paper:
 
 > **Recall-Optimised Failure Detection in Industrial Telemetry:**  
 > *A Rolling Degraded-State Counter Versus a 21-Sensor Random Forest on NASA C-MAPSS FD001*  
-> — *Puru Pandey* (Preprint, revised September 2026, Version 3, [DOI: 10.5281/zenodo.22285377](https://doi.org/10.5281/zenodo.22285377))
+> — *Puru Pandey* (Preprint, revised September 2026, Version 4, [DOI: 10.5281/zenodo.22304632](https://doi.org/10.5281/zenodo.22304632))
 
 ---
 
@@ -39,8 +39,12 @@ In the original draft, the degradation percentile threshold ($Q_{0.70}$) was com
 *\* Cost model: Missed failure (FN) = \$50,000 (unplanned downtime); False alarm (FP) = \$5,000 (unnecessary inspection). Illustrative assumed ratio, not a measured universal industrial figure.*  
 *Test set: 20 held‑out engines, 3,852 cycles (620 at‑risk).*
 
-### Key Insight
-The rolling-count model is **neither the highest-recall nor the highest-precision model** in this benchmark. The three naive baselines achieve high recall (0.998–1.000) but flood operators with false alarms (918–1,058 per test set, precision 0.370–0.403), while the Random Forest achieves higher precision (0.849) but misses more critical failures (70 misses vs. 0). The distinguishing property of the rolling degraded-state counter is that it avoids both high miss counts and excessive false alarms simultaneously, achieving the **lowest total operational cost (\$2.55M vs. \$3.99M for RF)** under the stated illustrative cost ratio.
+### Key Finding
+- Four of five models reach at-risk recall 0.9984-1.0000, yet costs span $2.55M to $5.29M (2.07x). Recall does not distinguish them.
+- The RF wins weighted F1 (0.9568) while missing 70 failures and costing 56% more than the cheapest model.
+- Under a nested 60/20/20 protocol across 30 splits, the rolling-count model costs $2.11M +/- $0.39M vs $3.84M +/- $0.95M, 30/30 cost wins.
+- Selecting (w, tau) on the test split understates cost by $790,167 (42%).
+- The $50k/$5k ratio is an illustrative assumption, not a measured figure.
 
 ---
 
@@ -91,8 +95,12 @@ All output logs and tables are saved in the `results/` folder:
 ## 📁 Repository Structure
 ```
 .
-├── preprint_corrected_verified.pdf # Compiled paper PDF (Zenodo v3)
+├── preprint_corrected_verified.pdf # Compiled paper PDF (Zenodo v4)
 ├── preprint_corrected_verified.tex # Full LaTeX paper source
+├── archive/                       # Superseded versions (retained for provenance)
+│   ├── preprint_v3.pdf            # Zenodo v3 paper PDF (superseded)
+│   ├── preprint_v3.tex            # Zenodo v3 LaTeX source
+│   └── README.md
 ├── corrected_pipeline.py          # Primary result + sensitivity grid
 ├── run_prompts_5_6.py             # Confusion matrices + cost analysis
 ├── nested_cv.py                   # Cost grid, nested protocol, selection analyses
@@ -118,13 +126,13 @@ If you use this code or results, please cite the associated paper:
 
 ```bibtex
 @misc{pandey2026recall,
-  title={Recall-Optimised Failure Detection in Industrial Telemetry: A Rolling Degraded-State Counter Versus a 21-Sensor Random Forest on NASA C-MAPSS FD001},
+  title={When Recall Stops Discriminating: Cost-Adjusted Model Selection for Failure Detection in Industrial Telemetry on NASA C-MAPSS FD001},
   author={Pandey, Puru},
   year={2026},
   publisher={Zenodo},
-  version={v3},
-  doi={10.5281/zenodo.22285377},
-  url={https://doi.org/10.5281/zenodo.22285377}
+  version={v4},
+  doi={10.5281/zenodo.22304632},
+  url={https://doi.org/10.5281/zenodo.22304632}
 }
 ```
 

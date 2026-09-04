@@ -16,17 +16,17 @@
 \pagestyle{fancy}
 \fancyhf{}
 \renewcommand{\headrulewidth}{0pt}
-\fancyhead[C]{\small\textit{Published on Zenodo -- September 2026 (Corrected Version)}}
+\fancyhead[C]{\small\textit{Published on Zenodo -- September 2026 (Version 4)}}
 \fancyfoot[C]{\thepage}
 
 %% Title
-\title{\textbf{Recall-Optimised Failure Detection in Industrial Telemetry:}\\
-\textbf{A Rolling Degraded-State Counter Versus a 21-Sensor Random Forest}\\
-\textbf{on NASA C-MAPSS FD001 -- Corrected Leak-Free Analysis}}
+\title{\textbf{When Recall Stops Discriminating: Cost-Adjusted Model Selection}\\
+\textbf{for Failure Detection in Industrial Telemetry}\\
+\textbf{on NASA C-MAPSS FD001}}
 
 \author{Puru Pandey\\
-\small Department of Artificial Intelligence \& Machine Learning\\
-\small Galgotias University, Greater Noida, UP 201310, India\\
+\small Independent Researcher\\
+\small Greater Noida, Uttar Pradesh, India\\
 \small \href{mailto:purupandey2001@gmail.com}{purupandey2001@gmail.com}\\
 \small \href{https://github.com/Puru2001pandey/industrial-telemetry-analytics-research}{github.com/Puru2001pandey/industrial-telemetry-analytics-research}}
 
@@ -39,44 +39,40 @@
 %% Abstract
 \begin{abstract}
 Binary failure classification in predictive maintenance requires detecting at-risk
-machine states before failure occurs.
-Evaluation metrics that aggregate across classes---such as weighted F1---can mask poor
-performance on the minority at-risk class, which is the class that matters for
-deployment.
-This paper compares two classifiers on the NASA C-MAPSS FD001 benchmark (20,631 cycles,
-100 engine units): (1) logistic regression trained on a single rolling degraded-state
-counter derived from per-unit-normalised sensor composites, and (2) a 100-tree Random
-Forest trained on all 21 raw sensor channels.
-\textit{This corrected version enforces a strict leak-free threshold: the degradation
-percentile is estimated only from healthy-phase cycles (RUL $>$ 40) of training units,
-eliminating the look-ahead bias present in earlier exploratory drafts.}
-Both models are evaluated on a unit-level 80/20 split to prevent temporal leakage.
-The logistic regression achieves \textbf{0.940 recall} on at-risk cycles (within 30
-cycles of failure) versus \textbf{0.887} for the Random Forest on the primary seed-42
-split; across 30 random seeds the LR mean recall is \textbf{0.962 $\pm$ 0.024} vs.\
-\textbf{0.898 $\pm$ 0.028} for the RF (paired $t$-test: $t=9.36$, $p<10^{-8}$).
-The Random Forest achieves higher weighted F1 (0.957 vs.\ 0.934).
-Critically, recall alone does not identify the best model: three simple baselines
-(single best sensor, raw composite score, moving average) achieve even higher recall
-(0.986--1.000) than the rolling-count feature, but suffer a precision collapse
-(0.372--0.453), generating 750--1,030 false alarms.
-Under a deployment cost model (missed failure = \$50,000; false alarm = \$5,000), the
-rolling-count model achieves the \emph{lowest total operational cost} of all five
-approaches evaluated (\$3.00M), ahead of the Random Forest (\$3.99M) and all three
-high-recall baselines (\$3.75M--\$5.60M).
-We further show this cost advantage is stable across window lengths 5--20 cycles and
-degradation-percentile thresholds 50--90\%.
-The central claim of this paper is therefore not that the rolling-count feature
-maximises recall---it does not, among the models tested---but that it identifies the
-best cost-adjusted operating point, a distinction we argue is the one that matters for
-deployment.
-Code and data are available at
+machine states before failure occurs. Model selection on this task is usually driven by
+a single metric---recall, or an aggregate such as weighted F1---and this paper shows,
+on the NASA C-MAPSS FD001 benchmark (20,631 cycles, 100 engine units), that neither
+metric is sufficient to identify the model a practitioner should deploy.
+We evaluate five approaches: logistic regression on a single rolling degraded-state
+counter derived from per-unit-normalised sensor composites; a 100-tree Random Forest on
+all 21 raw sensor channels; and three simple thresholding baselines.
+On a held-out seed-42 unit-level split, \textbf{four of the five models achieve at-risk
+recall between 0.998 and 1.000, yet their total operational costs range from \$2.55M to
+\$5.29M}---a 2.07$\times$ spread that recall cannot detect, driven entirely by precision
+(0.370--0.549). The Random Forest, meanwhile, attains the highest weighted F1 (0.957)
+while costing 56\% more than the cheapest model.
+Selecting on either metric alone therefore picks the wrong model.
+To estimate generalisation honestly we adopt a nested unit-level protocol: 60 training,
+20 validation and 20 test engines per split, with the degradation threshold fitted on
+training-engine healthy cycles only (RUL $>$ 40) and $(w,\tau)$ chosen on validation
+engines. Across 30 such splits the rolling-count model costs \$2.11M $\pm$ \$0.39M
+versus \$3.84M $\pm$ \$0.95M for the Random Forest, winning on cost in
+\textbf{30 of 30 splits} at roughly 40\% of the Random Forest's variance.
+We further quantify two selection effects that are rarely reported on this benchmark:
+choosing $(w,\tau)$ by minimising cost on a single test split understates true cost by
+\textbf{\$790,167} (42\%), and per-split tuning on 20 validation engines is
+\emph{worse} than a fixed setting (\$2.11M vs.\ \$1.89M), because the optimum is not
+identifiable from that sample---12 distinct $(w,\tau)$ pairs are selected across 30
+splits, the modal choice appearing in only 5.
+This version also corrects a degradation-direction error in the sensor preprocessing
+present in versions 1--3 (Section~\ref{sec:sensors}).
+Code is available at
 \url{https://github.com/Puru2001pandey/industrial-telemetry-analytics-research}.
 \end{abstract}
 
 \noindent\textbf{Keywords:} predictive maintenance, feature engineering, C-MAPSS,
 logistic regression, random forest, cost-sensitive evaluation, class imbalance,
-industrial IoT, leak-free evaluation.
+industrial IoT, leak-free evaluation, nested cross-validation, selection bias.
 
 %%===========================================================================
 \section{Introduction}
@@ -86,7 +82,7 @@ Predictive maintenance (PdM) systems aim to detect incipient failures in industr
 equipment before they occur \cite{jardine2006review}.
 The NASA C-MAPSS benchmark \cite{saxena2008damage} has become a standard testbed for
 prognostic methods, with most prior work focusing on Remaining Useful Life (RUL)
-regression \cite{li2018remaining,wu2021temporal}.
+regression \cite{li2018remaining}.
 However, real-world maintenance decisions often require a binary alert: will this
 machine fail within the next $N$ cycles?
 
@@ -102,30 +98,32 @@ A less obvious pitfall, which this corrected analysis surfaces directly, is that
 flagging almost everything, at the cost of a false-alarm rate that makes it
 operationally unusable.
 
-This paper originally set out to test whether a single, domain-informed temporal
-feature could out-recall a high-dimensional sensor ensemble on C-MAPSS FD001.
-\textit{This corrected version enforces a strict leak-free protocol: the degradation
-percentile threshold is estimated exclusively from healthy-phase cycles (RUL $>$ 40)
-of training units, eliminating the subtle look-ahead bias present in earlier
-exploratory drafts, in which the threshold was computed over each engine's full
-run-to-failure trajectory.}
-Under this corrected protocol, the single-feature logistic regression achieves 0.940
-recall versus 0.887 for the Random Forest ensemble on the primary split (0.962 vs.\
-0.898 across 30 seeds), while the ensemble achieves higher weighted F1 (0.957 vs.\
-0.934).
-We additionally compare against three simple baselines---single best sensor, raw
-composite score, and moving average---and find that each of these \emph{exceeds} the
-rolling-count feature's recall (0.986--1.000 vs.\ 0.940), which forced a reframing of
-the paper's central claim.
-The rolling-count feature is not the highest-recall model in this study.
-It is, however, the model with the lowest total operational cost under a realistic
-cost asymmetry between missed failures and false alarms, because the high-recall
-baselines achieve that recall by generating an operationally infeasible number of
-false alarms.
-We argue this distinction---between a model that scores best on a single metric in
-isolation and a model that is the best deployment choice under a stated cost
-structure---is the paper's primary contribution, and one with direct implications for
-how PdM models should be evaluated and selected in practice.
+This paper set out to test whether a single, domain-informed temporal feature could
+match a high-dimensional sensor ensemble on C-MAPSS FD001. The question it ended up
+answering is a different and more general one: which metric should decide that
+comparison at all.
+
+Two corrections separate this version from its predecessors, and both are described in
+full rather than folded silently into the results. Versions 1--2 estimated the
+degradation percentile over each engine's complete run-to-failure trajectory, a
+look-ahead bias corrected in version 3 by restricting the estimate to healthy-phase
+cycles (RUL $>$ 40) of training engines. Versions 1--3 additionally assigned three of
+fourteen sensors to the wrong side of the degradation composite
+(Section~\ref{sec:sensors}), which this version corrects and which required re-running
+every experiment.
+
+Under the corrected pipeline, four of the five models evaluated reach at-risk recall
+between 0.9984 and 1.0000 on the held-out engines, while their operational costs span
+\$2.55M to \$5.29M. Recall cannot separate them. Weighted F1 ranks first the one model
+that misses 70 failures. The distinction this paper draws---between a model that scores
+best on a metric in isolation and a model that is the right deployment choice under a
+stated cost structure---is therefore not a matter of emphasis but of arriving at
+different answers.
+
+We estimate generalisation under a nested unit-level protocol rather than a single
+split, and quantify two selection effects that this exercise made visible: a \$790,167
+optimism from choosing hyperparameters on the test engines, and the finding that
+per-split tuning on a small validation set does not beat a fixed default.
 
 %%===========================================================================
 \section{Related Work}
@@ -134,18 +132,20 @@ how PdM models should be evaluated and selected in practice.
 The C-MAPSS benchmark \cite{saxena2008damage} has attracted a large body of work, most
 of it aimed at RUL regression.
 Li et al.\ \cite{li2018remaining} achieve strong RMSE on FD001 with deep convolutional
-networks; Wu et al.\ \cite{wu2021temporal} extend this with attention mechanisms across
-sensor channels.
+networks, and this line of work has since been extended with attention-based and
+sequence-model architectures.
 These are impressive results, but they address a different question---predicting how
 many cycles remain---rather than the binary question of whether a failure is imminent.
 
-For binary classification specifically, Khelif et al.\ \cite{khelif2017direct} show
-that a hand-crafted health indicator can match support vector machines on fixed-horizon
-prediction; their health indicator, like the rolling-count feature in this paper, is
-a single scalar derived from domain knowledge rather than a learned high-dimensional
-representation, though their evaluation targets fixed-horizon accuracy rather than
-at-risk recall or a deployment cost model, which is the gap this paper targets
-directly.
+Khelif et al.\ \cite{khelif2017direct} take the opposite approach to the one adopted
+here: they estimate RUL directly from sensor values using support vector regression,
+explicitly avoiding the intermediate steps of constructing a health indicator and
+setting a failure threshold. That design choice is instructive precisely because this
+paper does the reverse---it builds a single domain-informed health indicator and
+thresholds it---and because their target is continuous RUL rather than a binary
+at-risk alert. Neither their work nor the regression literature more broadly evaluates
+at-risk recall against an explicit deployment cost model, which is the gap this paper
+targets directly.
 Ramasso and Saxena \cite{ramasso2014application} make a point that shaped the
 preprocessing decisions in this paper: raw C-MAPSS sensor readings carry substantial
 engine-specific baseline offsets, so any meaningful comparison requires per-unit
@@ -153,8 +153,9 @@ normalisation before modelling.
 Without it, differences between engines swamp the degradation signal.
 
 Class-imbalanced classification more broadly has a well-established toolkit,
-including cost-sensitive reweighting of the training loss to counteract skewed class
-frequencies \cite{lin2017focal}.
+including reweighting the training loss so that easy, well-classified majority
+examples contribute less to the objective and training concentrates on the harder
+minority cases \cite{lin2017focal}.
 Most treatments of this kind optimise an aggregate loss or metric (weighted accuracy,
 AUC, or F1) rather than isolating recall on the minority class as the deployment-critical
 quantity, and fewer still evaluate the resulting recall/precision trade-off against an
@@ -196,7 +197,7 @@ We define:
     0 & \text{otherwise}\quad\text{(healthy)}
   \end{cases}
 \end{equation}
-This yields 17,531 healthy and 3,100 at-risk observations (14.4\% minority class).
+This yields 17,531 healthy and 3,100 at-risk observations (15.0\% minority class).
 
 %%===========================================================================
 \section{Methodology}
@@ -209,8 +210,21 @@ discriminative signal \cite{ramasso2014application}.
 We retain 14 sensors with meaningful variance:
 $\{s_{02},s_{03},s_{04},s_{07},s_{08},s_{09},s_{11},s_{12},s_{13},s_{14},s_{15},s_{17},s_{20},s_{21}\}$,
 categorised by degradation direction:
-rising sensors $\mathcal{R}=\{s_{02},\ldots,s_{15}\}$ (values increase with degradation)
-and falling sensors $\mathcal{F}=\{s_{17},s_{20},s_{21}\}$ (values decrease).
+rising sensors
+$\mathcal{R}=\{s_{02},s_{03},s_{04},s_{08},s_{09},s_{11},s_{13},s_{14},s_{15},s_{17}\}$
+(values increase with degradation)
+and falling sensors $\mathcal{F}=\{s_{07},s_{12},s_{20},s_{21}\}$ (values decrease).
+
+\label{sec:sensors}
+\textbf{Correction to the direction assignment.} In versions 1--3 of this record,
+$s_{07}$ and $s_{12}$ were assigned to $\mathcal{R}$ and $s_{17}$ to $\mathcal{F}$.
+Verifying the assignment against the data shows all three were placed on the wrong
+side: the Pearson correlation of each normalised sensor with RUL is $+0.657$ for
+$s_{07}$ and $+0.672$ for $s_{12}$ (both \emph{decrease} as the engine degrades) and
+$-0.606$ for $s_{17}$ (it \emph{increases}). Under Equation~\ref{eq:score} this made
+both terms of the composite partially self-cancelling, since two of eleven rising
+sensors and one of only three falling sensors moved against the degradation signal.
+The assignment above is the corrected one, and all results in this version use it.
 
 Per-unit min-max normalisation removes engine-specific baseline offsets:
 \begin{equation}
@@ -229,10 +243,11 @@ We define a composite degradation score for each cycle:
     \tfrac{1}{|\mathcal{R}|}\!\sum_{s\in\mathcal{R}}\tilde{x}_{u,c,s}
     +\!\left(1-\tfrac{1}{|\mathcal{F}|}\!\sum_{s\in\mathcal{F}}\tilde{x}_{u,c,s}\right)
   }{2}
+  \label{eq:score}
 \end{equation}
 
 \noindent\textbf{Critical correction: leak-free threshold estimation.}
-In earlier exploratory drafts, a cycle was labelled degraded if its score exceeded the
+In versions 1 and 2 of this record, a cycle was labelled degraded if its score exceeded the
 70th percentile of that engine's \textit{full} score distribution---including at-risk
 cycles, introducing a look-ahead bias.
 In this corrected version, the threshold is estimated \textit{strictly from healthy-phase
@@ -276,16 +291,16 @@ to choose the 14 informative sensors or compute the per-unit normalisation.
 
 To understand whether the rolling-count feature specifically drives its result, and
 to test whether simpler alternatives dominate it, we include three baselines that
-were absent from the original draft:
+were absent from versions 1 and 2:
 \begin{enumerate}[label=(\alph*)]
   \item \textbf{Single best sensor:} threshold the normalised sensor with the highest
         absolute correlation with the at-risk label on training data.
   \item \textbf{Raw composite score:} threshold $d_{u,c}$ directly (no rolling window).
   \item \textbf{Moving average:} threshold the $w$-cycle moving average of $d_{u,c}$.
 \end{enumerate}
-As Section~\ref{sec:results} shows, these baselines are not dominated by the
-rolling-count feature on recall; they are dominated by it on operational cost, which
-is the more consequential finding.
+As Section~\ref{sec:results} shows, these baselines match the rolling-count feature on
+recall almost exactly; what separates them is precision, and therefore operational
+cost.
 
 \subsection{Evaluation Protocol}
 
@@ -301,9 +316,19 @@ operational cost under a stated false-negative/false-positive cost ratio
 (Section~\ref{sec:results}) as the primary basis for model comparison, since this is
 the quantity a deployment decision actually depends on.
 
+\paragraph{Nested protocol for generalisation estimates.}
+Reporting cost at a $(w,\tau)$
+chosen by minimising cost on the test engines would be selection bias, and
+Section~\ref{sec:optimism} shows the resulting figure is optimistic by a wide margin.
+For the generalisation estimate in Table~\ref{tab:nested} we therefore partition the
+100 engines three ways per seed---60 training, 20 validation, 20 test, always at engine
+level---fit the leak-free threshold on training-engine healthy cycles only, select
+$(w,\tau)$ by minimum cost on the \emph{validation} engines, and evaluate once on the
+test engines. This is repeated for seeds 0--29.
+
 \paragraph{Statistical stability.}
-The experiment is repeated across 30 random 80/20 splits (seeds 0--29) to assess
-robustness; a paired $t$-test compares LR vs.\ RF recall means.
+The 80/20 experiment is additionally repeated across 30 random splits (seeds 0--29) to
+assess robustness of the single-split comparison.
 
 %%===========================================================================
 \section{Results}
@@ -314,8 +339,11 @@ engine units (seed 42), using the leak-free global threshold.
 
 \begin{table*}[t]
 \centering
-\caption{Classification on NASA C-MAPSS FD001 (20 held-out engines, 3,852 test cycles).
-At-risk support: 620 cycles. \textbf{Bold}: lowest-cost model.}
+\caption{Classification on NASA C-MAPSS FD001 (20 held-out engines, 3,852 test cycles;
+$w=10$, $\tau=70$, leak-free global threshold). At-risk support: 620 cycles.
+\textbf{Bold}: lowest-cost model. \textit{Italic}: best on that metric.
+Four models tie or near-tie on recall (0.9984--1.0000) while their costs span
+2.07$\times$.}
 \label{tab:results}
 \vspace{4pt}
 \small
@@ -323,29 +351,42 @@ At-risk support: 620 cycles. \textbf{Bold}: lowest-cost model.}
 \toprule
 Model & At-Risk Recall & Precision & Weighted F1 & Total Cost* \\
 \midrule
-\textbf{LR -- Rolling Degraded Count (1 feat.)} & 0.940 & 0.717 & 0.934 & \textbf{\$3.00M} \\
-RF -- 21 Raw Sensors & 0.887 & 0.849 & 0.957 & \$3.99M \\
-Baseline 1: Single Best Sensor (s11) & 0.998 & 0.387 & 0.779 & \$4.95M \\
-Baseline 2: Raw Composite Score & 0.986 & 0.372 & 0.766 & \$5.60M \\
-Baseline 3: Moving Average ($w=10$) & 1.000 & 0.453 & 0.829 & \$3.75M \\
+\textbf{LR -- Rolling Degraded Count (1 feat.)} & 1.0000 & 0.5487 & 0.8812 & \textbf{\$2.55M} \\
+RF -- 21 Raw Sensors & 0.8871 & \textit{0.8488} & \textit{0.9568} & \$3.99M \\
+Baseline 1: Single Best Sensor ($s_{11}$) & 0.9984 & 0.3874 & 0.7790 & \$4.95M \\
+Baseline 2: Raw Composite Score & 1.0000 & 0.3695 & 0.7617 & \$5.29M \\
+Baseline 3: Moving Average ($w=10$) & 1.0000 & 0.4031 & 0.7926 & \$4.59M \\
 \bottomrule
 \end{tabular}
 \\[2pt]
 \small *Cost model: Missed failure (FN) = \$50,000; False alarm (FP) = \$5,000. Costs computed on the 3,852 test cycles.
 \end{table*}
 
-Note that the rolling-count model does \emph{not} have the highest recall in
-Table~\ref{tab:results}; three baselines exceed it (0.986--1.000 vs.\ 0.940). It also
-does not have the highest precision or weighted F1; the Random Forest leads on both.
-Its distinguishing property is the lowest total cost, because it is the only model
-that achieves strong recall without the precision collapse the three baselines exhibit.
+Table~\ref{tab:results} contains the paper's central observation. Four of the five
+models---the rolling-count logistic regression and all three baselines---achieve at-risk
+recall between 0.9984 and 1.0000. On recall they are indistinguishable. Their total
+operational costs, however, range from \$2.55M to \$5.29M, a factor of 2.07. A
+practitioner selecting on recall has no basis for choosing between them, and a
+one-in-four chance of picking the most expensive.
+
+What separates them is precision, which ranges from 0.3695 to 0.5487 across those four
+models and determines the false-alarm volume that dominates the cost calculation once
+misses are near zero.
+
+Weighted F1 fails differently. The Random Forest is the best model on both precision
+(0.8488) and weighted F1 (0.9568), and is the only model whose recall falls materially
+below 1.0 (0.8871). Selecting on weighted F1 picks the Random Forest and pays \$3.99M,
+56\% more than the \$2.55M of the model with the lowest cost. The aggregate metric is
+dominated by the 3,232 healthy cycles and is largely insensitive to the 70 missed
+failures that drive the cost.
 
 \paragraph{Confusion matrices (seed 42, leak-free global threshold).}
 
 \begin{table}[h]
 \centering
-\caption{Confusion matrices on 3,852 test cycles.
-LR misses 37 at-risk cycles; RF misses 70.}
+\caption{Confusion matrices on 3,852 test cycles ($w=10$, $\tau=70$).
+The LR misses no at-risk cycles but raises 510 false alarms; the RF misses 70 while
+raising 98.}
 \label{tab:cm}
 \vspace{4pt}
 \small
@@ -354,25 +395,27 @@ LR misses 37 at-risk cycles; RF misses 70.}
  & \multicolumn{2}{c|}{LR} & \multicolumn{2}{c}{RF} \\
  & Pred.\ 0 & Pred.\ 1 & Pred.\ 0 & Pred.\ 1 \\
 \midrule
-Actual 0 & 3,002 & 230 & 3,134 & 98 \\
-Actual 1 & 37 & 583 & 70 & 550 \\
+Actual 0 & 2,722 & 510 & 3,134 & 98 \\
+Actual 1 & 0 & 620 & 70 & 550 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The naive baselines (single sensor, raw composite, moving average) achieve very high
-recall (0.986--1.000) but at the cost of precision collapse (0.372--0.453), generating
-750--1,030 false alarms---operationally infeasible in a real maintenance operation
-where each flagged cycle prompts an inspection.
-The rolling-count model strikes the best balance: 94.0\% recall with 230 false alarms,
-yielding the lowest total cost under the \$50k/\$5k ratio.
+At this setting the rolling-count model catches every at-risk cycle, and the entirety
+of its \$2.55M cost is false alarms: 510 unnecessary inspections. The three baselines
+catch essentially every failure too, but raise 918--1,058 false alarms to do it. The
+Random Forest sits at the other extreme, raising only 98 false alarms but missing 70
+failures, which under this cost ratio is the more expensive error.
+
+We note that $\tau=70$ is inherited from earlier versions of this record and is not a
+tuned choice; Section~\ref{sec:sensitivity} shows the cost surface and
+Section~\ref{sec:optimism} explains why we do not select an operating point from it.
 
 \subsection{Statistical Stability Across 30 Splits}
 
-To assess whether the primary result depends on the specific 80/20 split, we repeated
-the experiment with 30 random seeds using the \textit{per-engine leak-free threshold}
-(each engine calibrated on its own healthy-phase data). This variant is more realistic
-for deployment and removes any global-pooling artefacts.
+To assess whether the single-split comparison depends on the specific 80/20 partition,
+we repeated it with 30 random seeds using the \textit{per-engine leak-free threshold}
+(each engine calibrated on its own healthy-phase data).
 
 \begin{table}[h]
 \centering
@@ -383,117 +426,147 @@ for deployment and removes any global-pooling artefacts.
 \toprule
 Metric & LR (Rolling Count) & RF (21 Sensors) \\
 \midrule
-Mean Recall & \textbf{0.962} $\pm$ 0.024 & 0.898 $\pm$ 0.028 \\
-Range & 0.910 -- 1.000 & 0.840 -- 0.958 \\
-Win Rate & \textbf{28 / 30} (93.3\%) & --- \\
-Paired $t$-test & \multicolumn{2}{c}{$t = 9.36$, \quad $p < 0.00000001$} \\
+Mean Recall & 1.0000 $\pm$ 0.0000 & 0.8977 $\pm$ 0.0284 \\
+Range & 1.0000 -- 1.0000 & 0.8403 -- 0.9581 \\
+Win Rate & 30 / 30 (100\%) & --- \\
+Paired $t$-test & \multicolumn{2}{c}{$t = 19.38$, \quad $p = 3.84\times10^{-18}$} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The LR outperforms the RF in 28 of 30 splits on recall, with a highly significant
-paired $t$-test. This establishes that the LR's recall edge over the RF specifically
-(not over the high-recall baselines) is stable and not an artefact of the primary
-split.
+The LR attains recall 1.0 on every one of the 30 splits. We report the paired $t$-test
+for continuity with earlier versions of this record, but it should not be read as a
+meaningful significance test: with zero variance in one arm, the statistic reduces to
+asking whether the RF mean differs from a constant, and the $t$ and $p$ values are
+artefacts of that degeneracy rather than evidence about a contested comparison.
+
+The zero variance is itself the finding. A classifier that never misses on any split,
+at precision 0.5487, is not a well-calibrated detector---it is one that flags a large
+share of all cycles. This is the same failure mode the paper attributes to the naive
+baselines, and it indicates that $\tau=70$ is a poor operating point for the corrected
+composite. Section~\ref{sec:sensitivity} shows the cost surface this sits on.
 
 \subsection{Sensitivity Analysis}
 \label{sec:sensitivity}
 
 The window length $w$ and the degradation percentile threshold $\tau$ are design
 choices.
-To assess whether the LR's recall advantage over the RF depends on a specific
-parameter setting, we vary $w \in \{5,10,15,20\}$ and $\tau \in \{50,60,70,80,90\}$
-using the leak-free global threshold.
+To characterise how the operating point affects deployment cost, we vary
+$w \in \{5,10,15,20\}$ and $\tau \in \{50,60,70,80,90\}$ using the leak-free global
+threshold and report total cost on the seed-42 test engines.
 
 \begin{table}[h]
 \centering
-\caption{Sensitivity to window $w$ ($\tau=70\%$). LR recall exceeds RF recall at
-all settings.}
-\label{tab:sens_window}
+\caption{Total operational cost (\$M) on the seed-42 test engines across the
+window/threshold grid. The Random Forest is constant at \$3.99M because it uses neither
+$w$ nor $\tau$. Costs fall monotonically in $\tau$ for every $w$, and the minimum in
+this range sits at the grid edge.}
+\label{tab:costgrid}
 \vspace{4pt}
 \small
-\begin{tabular}{ccccc}
+\begin{tabular}{cccccc}
 \toprule
-$w$ & LR Rec. & LR Prec. & RF Rec. & RF Prec. \\
+$w$ & $\tau=50$ & $\tau=60$ & $\tau=70$ & $\tau=80$ & $\tau=90$ \\
 \midrule
- 5 & 0.918 & 0.610 & 0.887 & 0.849 \\
-10 & 0.940 & 0.717 & 0.887 & 0.849 \\
-15 & 0.974 & 0.675 & 0.887 & 0.849 \\
-20 & 0.950 & 0.668 & 0.887 & 0.849 \\
+ 5 & 5.61 & 4.37 & 3.21 & 2.10 & 1.25 \\
+10 & 4.56 & 3.52 & 2.55 & 1.66 & 1.54 \\
+15 & 3.98 & 3.07 & 2.22 & 1.68 & 1.83 \\
+20 & 3.45 & 2.81 & 2.38 & 1.66 & 2.00 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+Two things follow. First, the LR is cheaper than the Random Forest in 17 of these 20
+cells but achieves higher at-risk recall in all 20---the two criteria disagree on three
+settings, which is a direct instance of the paper's central point measured within a
+single model family.
+
+Second, and more importantly, the minimum of this surface must not be used to choose an
+operating point, because every cell in it was computed on the test engines.
+Section~\ref{sec:optimism} quantifies what that would cost.
+
+\subsection{Nested generalisation estimate}
+\label{sec:nested}
+
+Table~\ref{tab:nested} reports the nested protocol of Section~\ref{sec:method}:
+$(w,\tau)$ selected on 20 validation engines, evaluated once on 20 disjoint test
+engines, repeated over 30 seeds.
+
 \begin{table}[h]
 \centering
-\caption{Sensitivity to percentile threshold $\tau$ ($w=10$). LR recall exceeds RF at
-all $\tau$ tested; RF recall is constant because it does not depend on $w$ or $\tau$.}
-\label{tab:sens_pct}
+\caption{Nested 60/20/20 unit-level protocol, 30 seeds. $(w,\tau)$ chosen by minimum
+validation cost; metrics reported on held-out test engines.}
+\label{tab:nested}
 \vspace{4pt}
 \small
-\begin{tabular}{ccccc}
+\begin{tabular}{lcc}
 \toprule
-$\tau$ & LR Rec. & LR Prec. & RF Rec. & RF Prec. \\
+Metric (test engines) & LR (Rolling Count) & RF (21 Sensors) \\
 \midrule
-50\% & 0.961 & 0.540 & 0.887 & 0.849 \\
-60\% & 0.992 & 0.573 & 0.887 & 0.849 \\
-70\% & 0.940 & 0.717 & 0.887 & 0.849 \\
-80\% & 0.935 & 0.766 & 0.887 & 0.849 \\
-90\% & 0.927 & 0.789 & 0.887 & 0.849 \\
+Mean total cost & \textbf{\$2.11M} $\pm$ \$0.39M & \$3.84M $\pm$ \$0.95M \\
+Cost range & \$1.46M -- \$3.19M & \$2.50M -- \$6.67M \\
+Mean recall & 0.9764 $\pm$ 0.0164 & 0.8982 $\pm$ 0.0372 \\
+Mean precision & 0.6939 $\pm$ 0.0636 & 0.8074 $\pm$ 0.0555 \\
+Cost win rate & \textbf{30 / 30} (100\%) & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Across all 20 parameter combinations, LR recall (0.918--0.992) exceeds RF recall
-(0.887) throughout. This confirms the LR-vs-RF recall advantage is not an artefact of
-a single lucky parameter setting. This sensitivity analysis was not re-run for the
-three simple baselines, since those baselines are threshold-only rules whose recall
-scales monotonically and near-trivially with $\tau$; the more informative comparison
-is the cost table in Table~\ref{tab:results}.
+Under honest selection the rolling-count model costs \$1.73M less per deployment on
+average and wins on cost in every split, at roughly 40\% of the Random Forest's
+standard deviation. Its recall (0.9764 $\pm$ 0.0164) is no longer degenerate, which
+confirms that the zero-variance result in Table~\ref{tab:stability} was an artefact of
+the fixed $\tau=70$ rather than a property of the feature.
 
 %%===========================================================================
 \section{Discussion}
 \label{sec:discussion}
 
 \subsection{Recall alone is not sufficient}
+\label{sec:recallfails}
 
-The result that most changes this paper's framing relative to earlier drafts is
-that three simple baselines---a single sensor threshold, the raw composite score, and
-a moving average---all achieve higher at-risk recall than the rolling-count feature
-(0.986--1.000 vs.\ 0.940).
-If recall were the sole criterion, these baselines would be preferred, and the
-rolling-count feature's contribution would be limited.
-They are not preferred, because each catches nearly every failure by flagging a very
-large fraction of all cycles as at-risk: precision collapses to 0.372--0.453,
-producing 750--1,030 false alarms on 3,852 test cycles.
-In a real maintenance operation, where every flagged cycle triggers an inspection,
-this volume of false alarms is operationally unworkable regardless of how many true
-failures it also catches.
+Recall fails as a selection criterion here not because it ranks the models wrongly,
+but because it stops ranking them at all. Four of the five models in
+Table~\ref{tab:results} lie between 0.9984 and 1.0000 at-risk recall---a spread of
+one missed cycle out of 620---while their costs differ by \$2.74M. Recall has no
+resolving power in that region, and a practitioner using it would be choosing at
+random among four models whose economics differ by a factor of two.
+
+This is a stronger statement than the one made in versions 1--3 of this record, which
+argued that simple baselines \emph{out-recalled} the proposed feature. After the
+degradation-direction correction of Section~\ref{sec:sensors} that is no longer true;
+nothing out-recalls the rolling-count model. The failure of recall as a criterion does
+not depend on it, and the corrected result isolates the mechanism more cleanly: once
+misses approach zero, all of the remaining cost variation lives in precision, which
+recall does not observe.
+
+Weighted F1 fails for a different reason. It is computed over 3,852 cycles of which
+3,232 are healthy, so it is dominated by majority-class performance. The Random Forest
+leads on it (0.9568) while missing 70 failures---the single largest cost term in the
+table.
 
 \subsection{Cost-adjusted comparison}
 
-Translating the confusion matrices to the stated cost model (missed failure = \$50,000;
-false alarm = \$5,000): the Random Forest incurs $70 \times \$50{,}000 = \$3{,}500{,}000$
-from missed detections plus $98 \times \$5{,}000 = \$490{,}000$ from false alarms,
-totalling \$3.99M.
-The logistic regression incurs $37 \times \$50{,}000 = \$1{,}850{,}000$ from missed
-detections plus $230 \times \$5{,}000 = \$1{,}150{,}000$ from false alarms, totalling
-\$3.00M.
-The three high-recall baselines, despite missing far fewer failures, incur far higher
-total cost (\$3.75M--\$5.60M) because their false-alarm volume dominates the cost
-calculation.
-The rolling-count model has the lowest total cost of all five approaches evaluated,
-not because it is best on any single metric in isolation, but because it is the only
-model that avoids both a large miss count and a large false-alarm count
-simultaneously.
+Translating the confusion matrices to the stated cost model (missed failure =
+\$50,000; false alarm = \$5,000): the Random Forest incurs
+$70 \times \$50{,}000 = \$3{,}500{,}000$ from missed detections plus
+$98 \times \$5{,}000 = \$490{,}000$ from false alarms, totalling \$3.99M. The rolling-count
+logistic regression misses nothing and incurs $510 \times \$5{,}000 = \$2{,}550{,}000$
+entirely from false alarms. The three baselines also miss almost nothing but raise
+918--1,058 false alarms, costing \$4.59M--\$5.29M.
+
+The ordering is therefore set by how many false alarms each model needs in order to
+reach near-perfect recall, and the rolling-count feature needs roughly half as many as
+the next-best alternative.
 
 We report this cost model as illustrative rather than universal: the \$50,000/\$5,000
-ratio is a stated assumption, not a measured industrial figure, and the ranking of
-models could shift under a different ratio. A practitioner facing a different
-inspection-to-downtime cost ratio should recompute this table with their own figures
-before drawing a deployment conclusion; the sensitivity tables in
-Section~\ref{sec:sensitivity} provide the recall/precision trade-off curve needed to
-do so at other operating points.
+ratio is a stated assumption, not a measured industrial figure, and the ranking could
+shift under a different ratio. The direction of the effect is worth stating explicitly,
+though. As the false-alarm cost rises relative to the miss cost, precision matters more
+and the argument in Section~\ref{sec:recallfails} strengthens; as it falls, all models
+converge toward the recall ordering and the distinction the paper draws becomes less
+consequential. A practitioner should recompute Table~\ref{tab:costgrid} with their own
+figures.
 
 \subsection{Interpretability}
 
@@ -507,24 +580,45 @@ interpretable in the same sense.
 In industrial settings where operators need to understand and trust an alert before
 acting on it, interpretability affects adoption \cite{jardine2006review}.
 
-\subsection{Stability of the LR-vs-RF comparison}
+\subsection{Selection optimism}
+\label{sec:optimism}
 
-The 30-seed stability analysis (Table~\ref{tab:stability}) demonstrates that the
-LR's recall advantage specifically over the RF is not a fluke of the primary split.
-Even with per-engine leak-free calibration, LR achieves 0.962 $\pm$ 0.024 recall versus
-0.898 $\pm$ 0.028 for the RF, winning 28 of 30 splits ($p < 10^{-8}$). This stability
-result concerns the LR-vs-RF comparison specifically; we did not repeat the 30-seed
-protocol for the three high-recall baselines, since their cost disadvantage at the
-primary split is large enough (\$0.75M--\$2.60M above the LR) that seed-to-seed
-variance is unlikely to overturn the ranking, though we did not verify this directly
-and flag it as an assumption.
+Extending the grid of Table~\ref{tab:costgrid} to finer thresholds locates an interior
+cost minimum at $w=3$, $\tau=92$, costing \$1,095,000 on the seed-42 test engines---less
+than half the \$2.55M at the inherited setting. Reporting that figure would be
+indefensible, because it was obtained by minimising cost on the same engines used to
+report it.
 
-The sensitivity analysis (Tables~\ref{tab:sens_window}, \ref{tab:sens_pct}) shows that
-the LR's recall advantage over the RF holds across all window lengths and percentile
-thresholds tested, with the highest LR recall at $w=15,\ \tau=60\%$ (values reported
-in the tables). Practitioners can tune $\tau$ based on their specific
-inspection-to-failure cost ratio, using Table~\ref{tab:sens_pct} as a starting
-recall/precision trade-off curve.
+Evaluating that identical $(w,\tau)$ across 30 splits gives \$1,885,167 $\pm$
+\$289,063. The single-split figure was therefore optimistic by \textbf{\$790,167}, or
+42\%. Under the nested protocol, where $(w,\tau)$ is chosen on validation engines that
+are never scored, mean validation cost is \$1,526,000 against a test cost of
+\$2,107,667---a residual optimism of \$581,667 attributable to selection on a finite
+validation sample.
+
+We report these two numbers because a cost figure obtained by grid search on a test set
+is a common and largely invisible failure in applied predictive-maintenance work, and
+because the magnitude here---a 42\% understatement---is large enough to reverse a
+deployment decision.
+
+\subsection{Tuning is not always worth it}
+\label{sec:tuning}
+
+A secondary observation follows from the same experiment. Selecting $(w,\tau)$ per
+split on 20 validation engines yields a mean test cost of \$2,107,667 $\pm$ \$386,850,
+whereas holding $(w,\tau)$ fixed at $(3,92)$ yields \$1,885,167 $\pm$ \$289,063---cheaper
+on average and with 25\% lower variance. Refitting on the combined 80 train-plus-validation
+engines did not help either (\$2,128,000).
+
+The selection distribution explains why: across 30 splits, 12 distinct $(w,\tau)$ pairs
+are chosen, the modal pair appearing in only 5. The optimum is not identifiable from 20
+validation engines, so per-split tuning injects variance without locating anything.
+
+This comparison is not clean, and we flag it rather than lean on it: the fixed pair
+$(3,92)$ was itself identified by inspecting seed-42 test performance, so its advantage
+is partly borrowed from the same optimism quantified above. The defensible claim is the
+weaker one---that with a validation set this small, tuning cannot be assumed to beat a
+sensible fixed default, and should be checked rather than presumed.
 
 \subsection{Limitations}
 
@@ -560,54 +654,87 @@ Table~\ref{tab:results} does not require this assumption but is a less realistic
 deployment scenario for a genuinely new engine with no prior healthy-phase data at
 all.
 
-Sixth, and specific to this corrected version: the stated cost model
-(\$50,000/\$5,000) is an illustrative assumption used to demonstrate that
-recall-alone optimisation is misleading, not a measured cost from a real deployment.
-The ranking in Table~\ref{tab:results} could change under a different cost ratio, and
-we have not swept this ratio systematically; doing so is a natural extension of the
-sensitivity analysis in Section~\ref{sec:sensitivity}.
+Sixth, the stated cost model (\$50,000/\$5,000) is an illustrative assumption, not a
+measured cost from a real deployment. The ranking in Table~\ref{tab:results} could
+change under a different ratio, and we have not swept it systematically.
+
+Seventh, and specific to this version: the degradation-direction assignment used in
+versions 1--3 placed three of fourteen sensors on the wrong side of
+Equation~\ref{eq:score} (Section~\ref{sec:sensors}). Every result in those versions was
+produced by a partially self-cancelling composite. The error was found by verifying the
+assignment against the data rather than by any reviewer, and correcting it improved the
+model on every metric reported here. We note it because it means the earlier versions'
+numbers should not be cited, and because the assignment in a hand-built health indicator
+is exactly the kind of assumption that is easy to state and rarely checked.
+
+Eighth, the cost surface in Table~\ref{tab:costgrid} becomes unstable at high
+thresholds. In the extended grid, cost is non-monotonic in $\tau$ above 92---at $w=2$,
+$\tau=97$ costs \$3.23M while $\tau=98$ costs \$2.13M. This is expected when the
+threshold is estimated from the sparse upper tail of the healthy score distribution, and
+it means operating points in that region are fragile and should not be selected without
+a much larger calibration sample.
 
 %%===========================================================================
 \section{Conclusion}
-\label{sec:conclusion}
 
-A single rolling degraded-state counter gives a logistic regression 0.940 recall on
-at-risk engine cycles in NASA C-MAPSS FD001 (0.962 $\pm$ 0.024 across 30 seeds), versus
-0.887 for a Random Forest on all 21 sensor channels (0.898 $\pm$ 0.028 across 30
-seeds). The Random Forest has higher weighted F1.
+On NASA C-MAPSS FD001, four of five evaluated models reach at-risk recall between 0.9984
+and 1.0000 while their deployment costs span \$2.55M to \$5.29M. Recall does not
+distinguish them. Weighted F1 ranks the Random Forest first while it misses 70 failures
+and costs 56\% more than the cheapest model. Neither metric, used alone, selects the
+model a practitioner should deploy.
 
-After correcting the look-ahead bias present in earlier exploratory drafts, and after
-introducing three simple baselines that were previously absent, the paper's central
-finding changed in an important way: the rolling-count feature is not the
-highest-recall model in this study---three simpler baselines all exceed it. What
-distinguishes the rolling-count feature is that it is the only model to avoid both a
-high miss count and a high false-alarm count simultaneously, making it the
-lowest-cost choice under a stated deployment cost model (\$3.00M, versus \$3.99M for
-the Random Forest and \$3.75M--\$5.60M for the high-recall baselines).
+Under a nested unit-level protocol---60 training, 20 validation and 20 test engines per
+split, with $(w,\tau)$ chosen on validation engines only---a logistic regression on a
+single rolling degraded-state counter costs \$2.11M $\pm$ \$0.39M against \$3.84M $\pm$
+\$0.95M for a 100-tree Random Forest on all 21 raw channels, winning on cost in 30 of 30
+splits at roughly 40\% of the ensemble's variance.
 
-The broader implication is that neither recall nor weighted F1, taken alone, reliably
-identifies the best model for deployment on a class-imbalanced predictive-maintenance
-task: recall alone can be gamed by an over-triggering rule, and weighted F1 can be
-dominated by performance on the majority class. A cost-adjusted comparison, using
-the actual asymmetry between the price of a missed failure and the price of a false
-alarm, is necessary to identify the operating point that is actually preferable for
-deployment. We report this cost-model result as illustrative rather than as a
-general claim, since the specific cost ratio used here is an assumption rather than
-a measured industrial figure.
+Two selection effects are worth reporting in their own right. Choosing $(w,\tau)$ by
+minimising cost on the test engines understates true cost by \$790,167, or 42\%. And
+per-split tuning on 20 validation engines is not better than a fixed setting, because 12
+distinct $(w,\tau)$ pairs are selected across 30 splits and the optimum is not
+identifiable from a sample that size.
 
-The full corrected pipeline is available on GitHub under the MIT licence.
-Clone the repository and run the \texttt{corrected\_pipeline.py} and
-\texttt{run\_prompts\_5\_6.py} scripts to reproduce every number in this paper.
+This version also corrects a degradation-direction error present in versions 1--3, in
+which three of fourteen sensors were assigned to the wrong side of the composite score.
+Correcting it improved every reported metric, and it is recorded here because the
+assignment is precisely the kind of domain assumption that is stated once and rarely
+verified.
+
+The full pipeline is available on GitHub under the MIT licence. Running
+\texttt{corrected\_pipeline.py}, \texttt{run\_prompts\_5\_6.py} and
+\texttt{nested\_cv.py} reproduces every number in this paper, including the nested
+protocol and the selection analyses of Sections~\ref{sec:optimism}
+and~\ref{sec:tuning}.
+
+%%===========================================================================
+\section*{Version History}
+This is version 4 of this record. Versions 1--2 contained a look-ahead bias in the
+degradation-threshold estimation; version 3 corrected it and added the three baselines
+reported here. Version 4 corrects a degradation-direction error affecting three sensors
+(Section~\ref{sec:sensors}), which required re-running every experiment; replaces the
+single-split cost estimate with a nested 60/20/20 protocol; adds the selection-optimism
+and tuning-instability analyses of Sections~\ref{sec:optimism} and \ref{sec:tuning};
+corrects the minority-class percentage and the author affiliation; and removes one
+citation that could not be verified. All superseded versions remain publicly accessible
+on Zenodo and should not be cited.
 
 %%===========================================================================
 \section*{Code Availability}
-All code, preprocessing pipeline, and the NASA C-MAPSS FD001 training file are
-available at:
+All code and the preprocessing pipeline are available at:
 \url{https://github.com/Puru2001pandey/industrial-telemetry-analytics-research}
 
-To reproduce all results: place \texttt{train\_FD001.txt} in \texttt{data/} and run
-\texttt{corrected\_pipeline.py} for the main experiment and sensitivity grid, then
-\texttt{run\_prompts\_5\_6.py} for confusion matrices and cost analysis.
+\noindent The NASA C-MAPSS FD001 training file is \emph{not} redistributed in this
+repository; it must be obtained directly from NASA. See the repository README for
+instructions.
+
+To reproduce all results: place \texttt{train\_FD001.txt} in \texttt{data/}, then run
+\texttt{corrected\_pipeline.py} for the primary result and sensitivity grid,
+\texttt{run\_prompts\_5\_6.py} for the confusion matrices and cost analysis, and
+\texttt{nested\_cv.py} for the cost grid (Table~\ref{tab:costgrid}), the nested
+protocol (Table~\ref{tab:nested}) and the selection analyses
+(Sections~\ref{sec:optimism}--\ref{sec:tuning}). Each writes its output to
+\texttt{results/}.
 
 \section*{Acknowledgements}
 The author thanks the NASA Ames Prognostics Center of Excellence for making the
@@ -616,7 +743,7 @@ This work was conducted independently, without institutional funding.
 
 %%===========================================================================
 \bibliographystyle{plainnat}
-\begin{thebibliography}{7}
+\begin{thebibliography}{6}
 
 \bibitem{jardine2006review}
 Jardine, A.K.S., Lin, D., and Banjevic, D. (2006).
@@ -638,15 +765,12 @@ Li, X., Ding, Q., and Sun, J.-Q. (2018).
 Remaining useful life estimation in prognostics using deep convolution neural networks.
 \textit{Reliability Engineering \& System Safety}, 172:1--11.
 
-\bibitem{wu2021temporal}
-Wu, J. et al.\ (2021).
-Data-driven remaining useful life prediction via multiple sensors with attention mechanism.
-\textit{Reliability Engineering \& System Safety}, 208:107340.
-
 \bibitem{khelif2017direct}
-Khelif, R. et al.\ (2017).
+Khelif, R., Chebel-Morello, B., Malinowski, S., Laajili, E., Fnaiech, F., and
+Zerhouni, N. (2017).
 Direct remaining useful life estimation based on support vector regression.
 \textit{IEEE Trans.\ Industrial Electronics}, 64(3):2276--2285.
+DOI: 10.1109/TIE.2016.2623260.
 
 \bibitem{lin2017focal}
 Lin, T.-Y., Goyal, P., Girshick, R., He, K., and Doll\'ar, P. (2017).
