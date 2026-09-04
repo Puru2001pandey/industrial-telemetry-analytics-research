@@ -39,3 +39,6 @@ desktop.ini
 visuals/*.png
 visuals/*.svg
 !visuals/.gitkeep
+
+# Run logs (generated — not committed)
+*.log

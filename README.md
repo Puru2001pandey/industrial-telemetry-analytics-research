@@ -103,6 +103,7 @@ All output logs and tables are saved in the `results/` folder:
 │   ├── medium_blog_post_draft.md
 │   ├── medium_paste.html
 │   └── README.md
+├── visuals/                       # Generated figures (regenerate from notebook)
 ├── summary.txt                    # Comprehensive experiment summary
 └── README.md                      # This file
 ```
