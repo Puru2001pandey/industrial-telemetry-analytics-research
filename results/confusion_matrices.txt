@@ -5,20 +5,20 @@ Total Test Cycles: 3852 | Actual At-Risk: 620 | Actual Healthy: 3232
 -------------------------------------------------------------------------------------
 Model                                      | TN    FP    FN    TP    | Recall  Prec    wF1    
 -------------------------------------------------------------------------------------
-LR (Rolling Degraded Count, 1 feature)     | 3002  230   37    583   | 0.9403  0.7171  0.9343 
+LR (Rolling Degraded Count, 1 feature)     | 2722  510   0     620   | 1.0000  0.5487  0.8812 
 RF (21 Raw Sensors, StandardScaler)        | 3134  98    70    550   | 0.8871  0.8488  0.9568 
 Baseline 1: Single Best Sensor (s11)       | 2253  979   1     619   | 0.9984  0.3874  0.7790 
-Baseline 2: Raw Composite Degradation Score | 2202  1030  9     611   | 0.9855  0.3723  0.7659 
-Baseline 3: Moving Average (w=10)          | 2482  750   0     620   | 1.0000  0.4526  0.8292 
+Baseline 2: Raw Composite Degradation Score | 2174  1058  0     620   | 1.0000  0.3695  0.7617 
+Baseline 3: Moving Average (w=10)          | 2314  918   0     620   | 1.0000  0.4031  0.7926 
 -------------------------------------------------------------------------------------
 
 OPERATIONAL COST MODEL EVALUATION (Missed Failure FN = $50k, False Alarm FP = $5k):
 -------------------------------------------------------------------------------------
 Model                                      | Failure Cost (FN)  | Inspection Cost (FP) | Total Cost  
 -------------------------------------------------------------------------------------
-LR (Rolling Degraded Count, 1 feature)     | $       1,850,000 | $         1,150,000 | $ 3,000,000
+LR (Rolling Degraded Count, 1 feature)     | $               0 | $         2,550,000 | $ 2,550,000
 RF (21 Raw Sensors, StandardScaler)        | $       3,500,000 | $           490,000 | $ 3,990,000
 Baseline 1: Single Best Sensor (s11)       | $          50,000 | $         4,895,000 | $ 4,945,000
-Baseline 2: Raw Composite Degradation Score | $         450,000 | $         5,150,000 | $ 5,600,000
-Baseline 3: Moving Average (w=10)          | $               0 | $         3,750,000 | $ 3,750,000
+Baseline 2: Raw Composite Degradation Score | $               0 | $         5,290,000 | $ 5,290,000
+Baseline 3: Moving Average (w=10)          | $               0 | $         4,590,000 | $ 4,590,000
 =====================================================================================

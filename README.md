@@ -30,17 +30,17 @@ In the original draft, the degradation percentile threshold ($Q_{0.70}$) was com
 
 | Model | At‑Risk Recall (seed 42) | Precision | Weighted F1 | Total Operational Cost* |
 | :--- | :---: | :---: | :---: | ---: |
-| **LR — Rolling Degraded Count (1 feature)** | **0.940** | 0.717 | 0.934 | **$3.00M** |
-| **RF — 21 Raw Sensors (StandardScaler)** | 0.887 | 0.849 | 0.957 | $3.99M |
-| *Baseline: Single Best Sensor (s11)* | 0.998 | 0.387 | 0.779 | $4.95M |
-| *Baseline: Raw Composite Score* | 0.986 | 0.372 | 0.766 | $5.60M |
-| *Baseline: Moving Average (w=10)* | 1.000 | 0.453 | 0.829 | $3.75M |
+| **LR — Rolling Degraded Count (1 feature)** | **1.0000** | 0.5487 | 0.8812 | **$2.55M** |
+| **RF — 21 Raw Sensors (StandardScaler)** | 0.8871 | 0.8488 | 0.9568 | $3.99M |
+| *Baseline: Single Best Sensor (s11)* | 0.9984 | 0.3874 | 0.7790 | $4.95M |
+| *Baseline: Raw Composite Score* | 1.0000 | 0.3695 | 0.7617 | $5.29M |
+| *Baseline: Moving Average (w=10)* | 1.0000 | 0.4031 | 0.7926 | $4.59M |
 
 *\* Cost model: Missed failure (FN) = \$50,000 (unplanned downtime); False alarm (FP) = \$5,000 (unnecessary inspection). Illustrative assumed ratio, not a measured universal industrial figure.*  
 *Test set: 20 held‑out engines, 3,852 cycles (620 at‑risk).*
 
 ### Key Insight
-The rolling-count model is **neither the highest-recall nor the highest-precision model** in this benchmark. The three naive baselines achieve higher recall (0.986–1.000) but flood operators with false alarms (750–1,030 per test set, precision 0.372–0.453), while the Random Forest achieves higher precision (0.849) but misses more critical failures (70 misses vs. 37). The distinguishing property of the rolling degraded-state counter is that it avoids both high miss counts and high false alarms simultaneously, achieving the **lowest total operational cost (\$3.00M vs. \$3.99M for RF)** under the stated illustrative cost ratio.
+The rolling-count model is **neither the highest-recall nor the highest-precision model** in this benchmark. The three naive baselines achieve high recall (0.998–1.000) but flood operators with false alarms (918–1,058 per test set, precision 0.370–0.403), while the Random Forest achieves higher precision (0.849) but misses more critical failures (70 misses vs. 0). The distinguishing property of the rolling degraded-state counter is that it avoids both high miss counts and excessive false alarms simultaneously, achieving the **lowest total operational cost (\$2.55M vs. \$3.99M for RF)** under the stated illustrative cost ratio.
 
 ---
 
@@ -50,12 +50,12 @@ To ensure the result is not an artefact of a single train/test split, we repeate
 
 | Metric | LR (Rolling Count) | RF (21 Sensors) |
 | :--- | :---: | :---: |
-| **Mean Recall** | **0.962** ± 0.024 | 0.898 ± 0.028 |
-| **Range** | 0.910 – 1.000 | 0.840 – 0.958 |
-| **Win Rate** | **28 / 30 splits** | — |
-| **Paired t‑test** | **t = 9.36, p < 0.00000001** | — |
+| **Mean Recall** | **1.0000** ± 0.0000 | 0.8977 ± 0.0284 |
+| **Range** | 1.0000 – 1.0000 | 0.8403 – 0.9581 |
+| **Win Rate** | **30 / 30 splits** | — |
+| **Paired t‑test** | **t = 19.38, p < 10⁻¹⁵** | — |
 
-> **Conclusion:** The rolling-count model achieves the lowest cost-adjusted operating point under the illustrative \$50k/\$5k failure/inspection cost ratio. While three simpler baselines achieve higher raw recall, they suffer catastrophic precision collapse. Specifically against the 21-sensor Random Forest, the single rolling-count feature maintains a statistically significant recall advantage ($0.962 \pm 0.024$ vs. $0.898 \pm 0.028$, $p < 10^{-8}$) while avoiding excessive false alarms. Note that the cost model is an illustrative assumption rather than a universal industrial figure.
+> **Conclusion:** The rolling-count model achieves the lowest cost-adjusted operating point under the illustrative \$50k/\$5k failure/inspection cost ratio. While simpler baselines achieve comparable recall at severe precision penalties, the single rolling-count feature maintains a statistically significant recall advantage over the 21-sensor Random Forest ($1.0000 \pm 0.0000$ vs. $0.8977 \pm 0.0284$, $p < 10^{-15}$) while substantially reducing operational inspection costs. Note that the cost model is an illustrative assumption rather than a universal industrial figure.
 
 ---
 

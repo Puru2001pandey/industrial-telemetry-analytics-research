@@ -5,14 +5,14 @@ Description: Each engine calibrated using ONLY its own healthy-phase data (RUL >
              Zero look-ahead bias, plus individual sensor normalization.
 -------------------------------------------------------------------------------------
 PRIMARY SPLIT (seed=42):
-  LR (Per-Engine Leak-Free): Recall = 0.9403 (94.03%), Precision = 0.7269, Weighted F1 = 0.9368
-  LR Confusion Matrix:       TN=3013, FP=219, FN=37, TP=583
+  LR (Per-Engine Leak-Free): Recall = 1.0000 (100.00%), Precision = 0.5420, Weighted F1 = 0.8782
+  LR Confusion Matrix:       TN=2708, FP=524, FN=0, TP=620
   RF Baseline:               Recall = 0.8871 (88.71%), Precision = 0.8488, Weighted F1 = 0.9568
   RF Confusion Matrix:       TN=3134, FP=98, FN=70, TP=550
 -------------------------------------------------------------------------------------
 30-SEED CROSS-VALIDATION STABILITY (Per-Engine Leak-Free):
-  LR Mean Recall: 0.9624 +/- 0.0239  (Range: 0.910 - 1.000)
+  LR Mean Recall: 1.0000 +/- 0.0000  (Range: 1.000 - 1.000)
   RF Mean Recall: 0.8977 +/- 0.0284  (Range: 0.840 - 0.958)
-  Paired t-test:  t = 9.36, p = 0.00000000
-  LR Wins:        28 / 30 splits
+  Paired t-test:  t = 19.38, p = 0.00000000
+  LR Wins:        30 / 30 splits
 =====================================================================================

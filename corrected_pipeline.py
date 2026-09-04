@@ -45,9 +45,9 @@ COLS = (
     + [f"s{i}" for i in range(1, 22)]
 )
 
-RISING_SENSORS = ["s2", "s3", "s4", "s7", "s8", "s9", "s11", "s12",
-                   "s13", "s14", "s15"]
-FALLING_SENSORS = ["s17", "s20", "s21"]
+RISING_SENSORS = ["s2", "s3", "s4", "s8", "s9", "s11", "s13", "s14",
+                  "s15", "s17"]
+FALLING_SENSORS = ["s7", "s12", "s20", "s21"]
 INFORMATIVE_SENSORS = RISING_SENSORS + FALLING_SENSORS
 
 

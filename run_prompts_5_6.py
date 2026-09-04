@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -13,8 +13,8 @@ WINDOW = 10
 PERCENTILE = 70
 
 COLS = ["unit", "cycle", "op1", "op2", "op3"] + [f"s{i}" for i in range(1, 22)]
-RISING_SENSORS = ["s2", "s3", "s4", "s7", "s8", "s9", "s11", "s12", "s13", "s14", "s15"]
-FALLING_SENSORS = ["s17", "s20", "s21"]
+RISING_SENSORS = ["s2", "s3", "s4", "s8", "s9", "s11", "s13", "s14", "s15", "s17"]
+FALLING_SENSORS = ["s7", "s12", "s20", "s21"]
 INFORMATIVE_SENSORS = RISING_SENSORS + FALLING_SENSORS
 
 def load_preprocessed_data(path="data/train_FD001.txt"):
@@ -130,7 +130,8 @@ def execute_prompt_5(df):
     
     res_str = "\n".join(out)
     print(res_str)
-    with open("confusion_matrices.txt", "w", encoding="utf-8") as f:
+    os.makedirs("results", exist_ok=True)
+    with open(os.path.join("results", "confusion_matrices.txt"), "w", encoding="utf-8") as f:
         f.write(res_str)
     return models
 
@@ -221,7 +222,8 @@ def execute_prompt_6(df):
     
     res_str = "\n".join(out)
     print("\n" + res_str)
-    with open("per_engine_leak_free_results.txt", "w", encoding="utf-8") as f:
+    os.makedirs("results", exist_ok=True)
+    with open(os.path.join("results", "per_engine_leak_free_results.txt"), "w", encoding="utf-8") as f:
         f.write(res_str)
 
 if __name__ == "__main__":
