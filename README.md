@@ -99,6 +99,10 @@ All output logs and tables are saved in the `results/` folder:
 ├── results/                       # Generated tables and logs
 │   ├── confusion_matrices.txt     # Full confusion matrices & cost model
 │   └── per_engine_leak_free_results.txt # Per-engine burn-in calibration
+├── drafts/                        # Working drafts & write-ups (not part of pipeline)
+│   ├── medium_blog_post_draft.md
+│   ├── medium_paste.html
+│   └── README.md
 ├── summary.txt                    # Comprehensive experiment summary
 └── README.md                      # This file
 ```
